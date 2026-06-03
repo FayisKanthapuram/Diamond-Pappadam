@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-stone-50 text-stone-900 antialiased;
+    @apply text-base leading-relaxed;
+  }
+
+  input,
+  select,
+  textarea {
+    @apply text-base;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto w-full max-w-7xl;
+  }
+
+  .page-title {
+    @apply text-xl font-bold text-stone-900 sm:text-2xl;
+  }
+
+  .touch-target {
+    @apply min-h-11 min-w-11;
+  }
+
+  .filter-stack {
+    @apply flex flex-col gap-3;
+  }
+
+  @screen sm {
+    .filter-stack {
+      @apply flex-row flex-wrap items-end;
+    }
+  }
+
+  .btn-stack {
+    @apply flex flex-col gap-2 sm:flex-row sm:flex-wrap;
+  }
+
+  .data-table-wrap {
+    @apply hidden overflow-x-auto md:block;
+  }
+
+  .data-card-list {
+    @apply space-y-3 md:hidden;
+  }
+
+  .data-card {
+    @apply rounded-xl border border-stone-200 bg-white p-4 shadow-sm;
+  }
+}
