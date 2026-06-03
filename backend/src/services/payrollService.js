@@ -21,7 +21,7 @@ export async function generatePayroll(month, year) {
         _id: '$employeeId',
         totalDryMachineKg: { $sum: '$dryMachineKg' },
         totalNonMachineKg: { $sum: '$nonMachineKg' },
-        totalEarnings: { $sum: '$totalAmount' },
+        totalEarnings: { $sum: { $ifNull: ['$netAmount', '$totalAmount'] } },
       },
     },
   ]);

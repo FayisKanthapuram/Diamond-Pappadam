@@ -46,7 +46,7 @@ export const productionsApi = {
   mine: (params) => api.get('/productions/me', { params, authRealm: 'employee' }),
   list: (params) => api.get('/productions', { params, authRealm: 'admin' }),
   pending: () => api.get('/productions/pending', { authRealm: 'admin' }),
-  approve: (id) => api.patch(`/productions/${id}/approve`, {}, { authRealm: 'admin' }),
+  approve: (id, data) => api.patch(`/productions/${id}/approve`, data, { authRealm: 'admin' }),
   reject: (id, rejectionReason) =>
     api.patch(`/productions/${id}/reject`, { rejectionReason }, { authRealm: 'admin' }),
   myEarnings: (params) => api.get('/productions/me/earnings', { params, authRealm: 'employee' }),

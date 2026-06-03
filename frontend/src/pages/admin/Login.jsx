@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAdminAuth } from '../../context/AdminAuthContext.jsx';
 import Button from '../../components/ui/Button.jsx';
@@ -10,8 +10,23 @@ export default function AdminLogin() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAdminAuth();
+  const { user, loading: authLoading, mustChangePassword, login } = useAdminAuth();
   const navigate = useNavigate();
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center">
+        <p className="text-stone-500">Loading...</p>
+      </div>
+    );
+  }
+
+  if (user?.role === 'admin') {
+    if (mustChangePassword) {
+      return <Navigate to="/admin/change-password" replace />;
+    }
+    return <Navigate to="/admin/dashboard" replace />;
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();

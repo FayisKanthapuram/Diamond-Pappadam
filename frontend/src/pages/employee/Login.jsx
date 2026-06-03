@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useEmployeeAuth } from '../../context/EmployeeAuthContext.jsx';
 import Button from '../../components/ui/Button.jsx';
@@ -10,8 +10,23 @@ export default function EmployeeLogin() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useEmployeeAuth();
+  const { user, loading: authLoading, mustChangePassword, login } = useEmployeeAuth();
   const navigate = useNavigate();
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center">
+        <p className="text-stone-500">Loading...</p>
+      </div>
+    );
+  }
+
+  if (user?.role === 'employee') {
+    if (mustChangePassword) {
+      return <Navigate to="/employee/change-password" replace />;
+    }
+    return <Navigate to="/employee/dashboard" replace />;
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();

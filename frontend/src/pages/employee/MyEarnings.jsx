@@ -73,11 +73,23 @@ export default function MyEarnings() {
               <dt className="text-stone-500">Non-Machine Earnings</dt>
               <dd>{formatCurrency(data.nonMachineAmount)}</dd>
             </div>
+            <div className="flex justify-between gap-4 border-b border-stone-100 pb-3">
+              <dt className="text-stone-500">Original Amount</dt>
+              <dd>{formatCurrency(data.originalAmount ?? data.totalEarnings)}</dd>
+            </div>
+            <div className="flex justify-between gap-4 border-b border-stone-100 pb-3">
+              <dt className="text-stone-500">Total Bonus</dt>
+              <dd className="text-emerald-700">+{formatCurrency(data.bonusAmount ?? 0)}</dd>
+            </div>
+            <div className="flex justify-between gap-4 border-b border-stone-100 pb-3">
+              <dt className="text-stone-500">Total Deduction</dt>
+              <dd className="text-red-700">−{formatCurrency(data.deductionAmount ?? 0)}</dd>
+            </div>
             <div className="flex justify-between gap-4 pt-1">
-              <dt className="text-base font-semibold">Total Earnings</dt>
+              <dt className="text-base font-semibold">Net Earnings</dt>
               <dd className="text-lg font-bold text-brand-700">{formatCurrency(data.totalEarnings)}</dd>
             </div>
-            <p className="text-xs text-stone-400">{data.entryCount} production entries</p>
+            <p className="text-xs text-stone-400">{data.entryCount} approved entries (net amounts)</p>
           </dl>
         </Card>
       ) : null}

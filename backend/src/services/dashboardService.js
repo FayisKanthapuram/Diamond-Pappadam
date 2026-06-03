@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Production } from '../models/Production.js';
 import { User } from '../models/User.js';
 import { getRecentEntries, countByStatus, countPendingApprovals } from './productionService.js';
@@ -17,7 +18,7 @@ async function sumProduction(match) {
       $group: {
         _id: null,
         totalKg: { $sum: { $add: ['$dryMachineKg', '$nonMachineKg'] } },
-        totalAmount: { $sum: '$totalAmount' },
+        totalAmount: { $sum: { $ifNull: ['$netAmount', '$totalAmount'] } },
       },
     },
   ]);
@@ -54,6 +55,7 @@ export async function getAdminDashboard() {
 }
 
 export async function getEmployeeDashboard(employeeId) {
+  const employeeObjectId = new mongoose.Types.ObjectId(employeeId);
   const now = new Date();
   const { month, year } = getCurrentMonthYear();
 
@@ -62,14 +64,14 @@ export async function getEmployeeDashboard(employeeId) {
   const monthStart = startOfMonth(year, month);
   const monthEnd = endOfMonth(year, month);
 
-  const baseToday = { employeeId, date: { $gte: todayStart, $lte: todayEnd } };
-  const baseMonth = { employeeId, date: { $gte: monthStart, $lte: monthEnd } };
+  const baseToday = { employeeId: employeeObjectId, date: { $gte: todayStart, $lte: todayEnd } };
+  const baseMonth = { employeeId: employeeObjectId, date: { $gte: monthStart, $lte: monthEnd } };
 
   const [today, thisMonth, recentProductionEntries, statusCounts] = await Promise.all([
     sumProduction(baseToday),
     sumProduction(baseMonth),
-    getRecentEntries(employeeId, 5),
-    countByStatus({ employeeId }),
+    getRecentEntries(employeeObjectId, 5),
+    countByStatus({ employeeId: employeeObjectId }),
   ]);
 
   return {

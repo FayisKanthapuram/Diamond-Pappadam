@@ -6,14 +6,47 @@ import Card from '../../components/ui/Card.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { FilterDate, FilterActions } from '../../components/FilterBar.jsx';
 import ProductionFormModal from '../../components/ProductionFormModal.jsx';
+import EmployeeProductionDetailModal from '../../components/EmployeeProductionDetailModal.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
-import { formatCurrency, formatDate, formatKg } from '../../utils/format.js';
+import ProductionAmountBreakdown from '../../components/ProductionAmountBreakdown.jsx';
+import {
+  OriginalAmount,
+  BonusAmount,
+  DeductionAmount,
+  NetAmount,
+  NetAmountHeader,
+  getPaymentAmounts,
+} from '../../components/PaymentAmountDisplay.jsx';
+import { formatDate, formatKg } from '../../utils/format.js';
+
+function PaymentTableCells({ production }) {
+  const { originalAmount, bonusAmount, deductionAmount, netAmount } = getPaymentAmounts(production);
+  const isApproved = production.status === 'approved';
+
+  return (
+    <>
+      <td className="py-3 pr-3">
+        <OriginalAmount amount={originalAmount} />
+      </td>
+      <td className="py-3 pr-3">
+        {isApproved ? <BonusAmount amount={bonusAmount} /> : <BonusAmount amount={0} />}
+      </td>
+      <td className="py-3 pr-3">
+        {isApproved ? <DeductionAmount amount={deductionAmount} /> : <DeductionAmount amount={0} />}
+      </td>
+      <td className="py-3 pr-3">
+        {isApproved ? <NetAmount amount={netAmount} showTooltip /> : <span className="text-stone-400">—</span>}
+      </td>
+    </>
+  );
+}
 
 export default function MyProduction() {
   const [productions, setProductions] = useState([]);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [loading, setLoading] = useState(true);
+  const [viewing, setViewing] = useState(null);
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -51,7 +84,7 @@ export default function MyProduction() {
     <div>
       <PageHeader
         title="Production History"
-        subtitle="Pending and rejected entries can be edited. Approved entries are locked."
+        subtitle="See how your pay is calculated: original amount, bonus, deduction, and net. Pending entries can still be edited."
       />
 
       <Card className="mb-4 sm:mb-6">
@@ -89,30 +122,31 @@ export default function MyProduction() {
                       <dt className="text-stone-400">Total KG</dt>
                       <dd>{formatKg(p.totalKg)}</dd>
                     </div>
-                    {p.status === 'approved' && (
-                      <div className="col-span-2">
-                        <dt className="text-stone-400">Amount</dt>
-                        <dd className="font-semibold text-brand-700">{formatCurrency(p.totalAmount)}</dd>
-                      </div>
-                    )}
-                    {p.notes && (
-                      <div className="col-span-2">
-                        <dt className="text-stone-400">Notes</dt>
-                        <dd>{p.notes}</dd>
-                      </div>
-                    )}
-                    {p.status === 'rejected' && p.rejectionReason && (
-                      <div className="col-span-2 rounded-lg bg-red-50 p-2">
-                        <dt className="text-red-700">Rejection Reason</dt>
-                        <dd className="text-red-600">{p.rejectionReason}</dd>
-                      </div>
-                    )}
                   </dl>
-                  {p.canEdit && (
-                    <Button className="mt-4 !w-full" variant="ghost" onClick={() => setEditing(p)}>
-                      Edit
-                    </Button>
+                  <div className="mt-3 border-t border-stone-100 pt-3">
+                    <ProductionAmountBreakdown
+                      production={p}
+                      showReason={false}
+                      alwaysShowAdjustments={p.status === 'approved'}
+                      compact
+                    />
+                  </div>
+                  {p.status === 'rejected' && p.rejectionReason && (
+                    <div className="mt-3 rounded-lg bg-red-50 p-2 text-sm">
+                      <p className="text-xs font-medium text-red-800">Rejection Reason</p>
+                      <p className="mt-1 text-red-700">{p.rejectionReason}</p>
+                    </div>
                   )}
+                  <div className="btn-stack mt-4">
+                    <Button variant="ghost" onClick={() => setViewing(p)}>
+                      View Details
+                    </Button>
+                    {p.canEdit && (
+                      <Button variant="secondary" onClick={() => setEditing(p)}>
+                        Edit
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -125,8 +159,12 @@ export default function MyProduction() {
                     <th className="pb-3 pr-3 font-medium">Status</th>
                     <th className="pb-3 pr-3 font-medium">Dry KG</th>
                     <th className="pb-3 pr-3 font-medium">Non-Machine KG</th>
-                    <th className="pb-3 pr-3 font-medium">Total</th>
-                    <th className="pb-3 pr-3 font-medium">Notes</th>
+                    <th className="pb-3 pr-3 font-medium">Original Amount</th>
+                    <th className="pb-3 pr-3 font-medium">Bonus Amount</th>
+                    <th className="pb-3 pr-3 font-medium">Deduction Amount</th>
+                    <th className="pb-3 pr-3 font-medium">
+                      <NetAmountHeader />
+                    </th>
                     <th className="pb-3 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -134,23 +172,23 @@ export default function MyProduction() {
                   {productions.map((p) => (
                     <tr key={p.id} className="border-b border-stone-100">
                       <td className="py-3 pr-3">{formatDate(p.date)}</td>
-                      <td className="py-3 pr-3"><StatusBadge status={p.status} /></td>
+                      <td className="py-3 pr-3">
+                        <StatusBadge status={p.status} />
+                      </td>
                       <td className="py-3 pr-3">{p.dryMachineKg}</td>
                       <td className="py-3 pr-3">{p.nonMachineKg}</td>
-                      <td className="py-3 pr-3">
-                        {p.status === 'approved' ? formatCurrency(p.totalAmount) : formatKg(p.totalKg)}
-                      </td>
-                      <td className="py-3 pr-3 text-stone-500">
-                        {p.rejectionReason ? (
-                          <span className="text-red-600">{p.rejectionReason}</span>
-                        ) : (
-                          p.notes || '—'
-                        )}
-                      </td>
+                      <PaymentTableCells production={p} />
                       <td className="py-3">
-                        {p.canEdit && (
-                          <Button size="sm" variant="ghost" onClick={() => setEditing(p)}>Edit</Button>
-                        )}
+                        <div className="flex flex-wrap gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => setViewing(p)}>
+                            View Details
+                          </Button>
+                          {p.canEdit && (
+                            <Button size="sm" variant="secondary" onClick={() => setEditing(p)}>
+                              Edit
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -160,6 +198,12 @@ export default function MyProduction() {
           </>
         )}
       </Card>
+
+      <EmployeeProductionDetailModal
+        open={!!viewing}
+        onClose={() => setViewing(null)}
+        production={viewing}
+      />
 
       <ProductionFormModal
         open={!!editing}

@@ -1,7 +1,11 @@
 import mongoose from 'mongoose';
 import { Production } from '../models/Production.js';
 import { getRates } from './settingsService.js';
-import { buildProductionFromRates, recalculateFromStoredRates } from '../utils/calculations.js';
+import {
+  buildProductionFromRates,
+  recalculateFromStoredRates,
+  calculateNetAmount,
+} from '../utils/calculations.js';
 import { startOfDay } from '../utils/dates.js';
 import { createError } from '../middleware/errorHandler.js';
 import { PRODUCTION_STATUS } from '../config/constants.js';
@@ -14,6 +18,15 @@ export function formatProduction(doc) {
   const emp = doc.employeeId;
   const createdBy = doc.createdBy;
   const approvedBy = doc.approvedBy;
+  const adjustedBy = doc.adjustedBy;
+  const originalAmount = doc.totalAmount ?? 0;
+  const bonusAmount = doc.bonusAmount ?? 0;
+  const deductionAmount = doc.deductionAmount ?? 0;
+  const netAmount =
+    doc.netAmount != null
+      ? doc.netAmount
+      : calculateNetAmount(originalAmount, bonusAmount, deductionAmount);
+
   return {
     id: doc._id.toString(),
     employeeId: emp?._id?.toString() || doc.employeeId?.toString(),
@@ -25,13 +38,21 @@ export function formatProduction(doc) {
     nonMachineRate: doc.nonMachineRate,
     dryMachineAmount: doc.dryMachineAmount,
     nonMachineAmount: doc.nonMachineAmount,
-    totalAmount: doc.totalAmount,
+    totalAmount: originalAmount,
+    originalAmount,
+    bonusAmount,
+    deductionAmount,
+    adjustmentReason: doc.adjustmentReason || '',
+    netAmount,
     totalKg: doc.dryMachineKg + doc.nonMachineKg,
     notes: doc.notes || '',
     status: doc.status || PRODUCTION_STATUS.PENDING,
     approvedBy: approvedBy?._id?.toString() || doc.approvedBy?.toString() || null,
     approvedByName: approvedBy?.name || undefined,
     approvedAt: doc.approvedAt || null,
+    adjustedBy: adjustedBy?._id?.toString() || doc.adjustedBy?.toString() || null,
+    adjustedByName: adjustedBy?.name || undefined,
+    adjustedAt: doc.adjustedAt || null,
     rejectionReason: doc.rejectionReason || '',
     createdBy: createdBy?._id?.toString() || doc.createdBy?.toString(),
     createdByName: createdBy?.name,
@@ -63,6 +84,12 @@ function resetApprovalFields(production) {
   production.approvedBy = null;
   production.approvedAt = null;
   production.rejectionReason = '';
+  production.bonusAmount = 0;
+  production.deductionAmount = 0;
+  production.adjustmentReason = '';
+  production.netAmount = production.totalAmount;
+  production.adjustedBy = null;
+  production.adjustedAt = null;
 }
 
 export async function createProductionEntry({ employeeId, createdBy, date, dryMachineKg, nonMachineKg, notes }) {
@@ -81,6 +108,10 @@ export async function createProductionEntry({ employeeId, createdBy, date, dryMa
     nonMachineKg,
     notes: notes || '',
     status: PRODUCTION_STATUS.PENDING,
+    bonusAmount: 0,
+    deductionAmount: 0,
+    adjustmentReason: '',
+    netAmount: snapshot.totalAmount,
     ...snapshot,
   });
 
@@ -143,6 +174,8 @@ export async function updateProductionEntry(id, user, payload) {
     resetApprovalFields(production);
   } else if (!isAdmin && status === PRODUCTION_STATUS.REJECTED) {
     resetApprovalFields(production);
+  } else {
+    production.netAmount = production.totalAmount;
   }
 
   await production.save();
@@ -150,7 +183,11 @@ export async function updateProductionEntry(id, user, payload) {
   return formatProduction(production);
 }
 
-export async function approveProductionEntry(id, adminUserId) {
+export async function approveProductionEntry(
+  id,
+  adminUserId,
+  { bonusAmount = 0, deductionAmount = 0, adjustmentReason = '' } = {}
+) {
   const production = await Production.findById(id)
     .populate('employeeId', 'name phone')
     .populate('createdBy', 'name');
@@ -161,13 +198,33 @@ export async function approveProductionEntry(id, adminUserId) {
     throw createError(400, 'Only pending production can be approved');
   }
 
+  const bonus = Math.max(0, Number(bonusAmount) || 0);
+  const deduction = Math.max(0, Number(deductionAmount) || 0);
+  const reason = (adjustmentReason || '').trim();
+
+  if ((bonus > 0 || deduction > 0) && !reason) {
+    throw createError(400, 'Adjustment reason is required when bonus or deduction is applied');
+  }
+
+  const netAmount = calculateNetAmount(production.totalAmount, bonus, deduction);
+  if (netAmount < 0) {
+    throw createError(400, 'Net amount cannot be negative');
+  }
+
+  const now = new Date();
   production.status = PRODUCTION_STATUS.APPROVED;
   production.approvedBy = adminUserId;
-  production.approvedAt = new Date();
+  production.approvedAt = now;
   production.rejectionReason = '';
+  production.bonusAmount = bonus;
+  production.deductionAmount = deduction;
+  production.adjustmentReason = reason;
+  production.netAmount = netAmount;
+  production.adjustedBy = adminUserId;
+  production.adjustedAt = now;
 
   await production.save();
-  await production.populate('approvedBy', 'name');
+  await production.populate(['approvedBy', 'adjustedBy'], 'name');
   return formatProduction(production);
 }
 
@@ -228,6 +285,7 @@ export async function listProductionEntries(filters, { isAdmin, userId }) {
     .populate('employeeId', 'name phone')
     .populate('createdBy', 'name')
     .populate('approvedBy', 'name')
+    .populate('adjustedBy', 'name')
     .sort({ date: -1, createdAt: -1 });
 
   return attachCanEdit(productions, { isAdmin, userId });
@@ -237,6 +295,7 @@ export async function getRecentEntries(employeeId, limit = 5) {
   const productions = await Production.find({ employeeId })
     .populate('createdBy', 'name')
     .populate('approvedBy', 'name')
+    .populate('adjustedBy', 'name')
     .sort({ createdAt: -1 })
     .limit(limit);
 

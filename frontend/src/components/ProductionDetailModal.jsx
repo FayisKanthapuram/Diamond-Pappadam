@@ -1,6 +1,7 @@
 import Modal from './ui/Modal.jsx';
 import StatusBadge from './StatusBadge.jsx';
-import { formatCurrency, formatDate, formatDateTime, formatKg } from '../utils/format.js';
+import ProductionAmountBreakdown from './ProductionAmountBreakdown.jsx';
+import { formatDate, formatDateTime, formatKg } from '../utils/format.js';
 
 export default function ProductionDetailModal({ open, onClose, production }) {
   if (!production) return null;
@@ -34,13 +35,14 @@ export default function ProductionDetailModal({ open, onClose, production }) {
           <dt className="text-stone-500">Total KG</dt>
           <dd className="font-medium">{formatKg(production.totalKg)}</dd>
         </div>
-        <div className="flex justify-between gap-4">
-          <dt className="text-stone-500">Total Amount</dt>
-          <dd className="font-semibold text-brand-700">{formatCurrency(production.totalAmount)}</dd>
+
+        <div className="border-t border-stone-100 pt-3">
+          <ProductionAmountBreakdown production={production} />
         </div>
+
         {production.notes && (
           <div>
-            <dt className="text-stone-500">Notes</dt>
+            <dt className="text-stone-500">Employee Notes</dt>
             <dd className="mt-1">{production.notes}</dd>
           </div>
         )}
@@ -59,6 +61,12 @@ export default function ProductionDetailModal({ open, onClose, production }) {
               <p>
                 Approved: {formatDateTime(production.approvedAt)}
                 {production.approvedByName ? ` by ${production.approvedByName}` : ''}
+              </p>
+            )}
+            {production.adjustedAt && (
+              <p>
+                Adjusted: {formatDateTime(production.adjustedAt)}
+                {production.adjustedByName ? ` by ${production.adjustedByName}` : ''}
               </p>
             )}
           </div>

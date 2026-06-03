@@ -7,7 +7,8 @@ import PageHeader from '../../components/PageHeader.jsx';
 import { FilterSelect, FilterDate, FilterActions } from '../../components/FilterBar.jsx';
 import ProductionFormModal from '../../components/ProductionFormModal.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
-import { formatCurrency, formatDate, formatKg } from '../../utils/format.js';
+import ProductionAmountBreakdown from '../../components/ProductionAmountBreakdown.jsx';
+import { formatCurrency, formatDate } from '../../utils/format.js';
 
 export default function Reports() {
   const [productions, setProductions] = useState([]);
@@ -98,10 +99,10 @@ export default function Reports() {
                       <p className="font-semibold text-stone-900">{p.employeeName}</p>
                       <p className="text-sm text-stone-500">{formatDate(p.date)}</p>
                     </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1">
-                      <StatusBadge status={p.status} />
-                      <p className="font-bold text-brand-700">{formatCurrency(p.totalAmount)}</p>
-                    </div>
+                    <StatusBadge status={p.status} />
+                  </div>
+                  <div className="mt-3">
+                    <ProductionAmountBreakdown production={p} compact />
                   </div>
                   <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
                     <div>
@@ -142,9 +143,11 @@ export default function Reports() {
                     <th className="pb-3 pr-3 font-medium">Status</th>
                     <th className="pb-3 pr-3 font-medium">Dry KG</th>
                     <th className="pb-3 pr-3 font-medium">Non-Machine KG</th>
-                    <th className="pb-3 pr-3 font-medium">Rates</th>
-                    <th className="pb-3 pr-3 font-medium">Total</th>
-                    <th className="pb-3 pr-3 font-medium">Notes</th>
+                    <th className="pb-3 pr-3 font-medium">Original</th>
+                    <th className="pb-3 pr-3 font-medium">Bonus</th>
+                    <th className="pb-3 pr-3 font-medium">Deduction</th>
+                    <th className="pb-3 pr-3 font-medium">Net</th>
+                    <th className="pb-3 pr-3 font-medium">Reason</th>
                     <th className="pb-3 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -156,11 +159,11 @@ export default function Reports() {
                       <td className="py-3 pr-3"><StatusBadge status={p.status} /></td>
                       <td className="py-3 pr-3">{p.dryMachineKg}</td>
                       <td className="py-3 pr-3">{p.nonMachineKg}</td>
-                      <td className="py-3 pr-3 text-xs text-stone-500">
-                        {formatCurrency(p.dryMachineRate)}/kg · {formatCurrency(p.nonMachineRate)}/kg
-                      </td>
-                      <td className="py-3 pr-3">{formatCurrency(p.totalAmount)}</td>
-                      <td className="py-3 pr-3 text-stone-500">{p.notes || '—'}</td>
+                      <td className="py-3 pr-3">{formatCurrency(p.originalAmount ?? p.totalAmount)}</td>
+                      <td className="py-3 pr-3 text-emerald-700">+{formatCurrency(p.bonusAmount ?? 0)}</td>
+                      <td className="py-3 pr-3 text-red-700">−{formatCurrency(p.deductionAmount ?? 0)}</td>
+                      <td className="py-3 pr-3 font-medium">{formatCurrency(p.netAmount ?? p.totalAmount)}</td>
+                      <td className="py-3 pr-3 text-stone-500">{p.adjustmentReason || p.notes || '—'}</td>
                       <td className="py-3">
                         <div className="flex flex-wrap gap-1">
                           <Button size="sm" variant="ghost" onClick={() => setEditing(p)}>Edit</Button>

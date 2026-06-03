@@ -8,18 +8,19 @@ import Modal from '../../components/ui/Modal.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import ProductionFormModal from '../../components/ProductionFormModal.jsx';
 import ProductionDetailModal from '../../components/ProductionDetailModal.jsx';
+import ApprovalModal from '../../components/ApprovalModal.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
-import { formatDate, formatKg } from '../../utils/format.js';
+import { formatCurrency, formatDate, formatKg } from '../../utils/format.js';
 
 export default function ProductionApprovals() {
   const [productions, setProductions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewing, setViewing] = useState(null);
+  const [approving, setApproving] = useState(null);
   const [editing, setEditing] = useState(null);
   const [rejecting, setRejecting] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [saving, setSaving] = useState(false);
-  const [actionLoading, setActionLoading] = useState(null);
 
   function load() {
     setLoading(true);
@@ -34,16 +35,18 @@ export default function ProductionApprovals() {
     load();
   }, []);
 
-  async function handleApprove(id) {
-    setActionLoading(id);
+  async function handleApprove(adjustments) {
+    if (!approving) return;
+    setSaving(true);
     try {
-      await productionsApi.approve(id);
+      await productionsApi.approve(approving.id, adjustments);
       toast.success('Production approved');
+      setApproving(null);
       load();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Approve failed');
     } finally {
-      setActionLoading(null);
+      setSaving(false);
     }
   }
 
@@ -82,7 +85,7 @@ export default function ProductionApprovals() {
     <div>
       <PageHeader
         title="Production Approvals"
-        subtitle="Review and approve employee production entries."
+        subtitle="Review quantities, apply bonus or deduction, then approve. Quantities cannot be changed here—use Edit for corrections."
       />
 
       <Card>
@@ -112,18 +115,13 @@ export default function ProductionApprovals() {
                       <dd>{p.nonMachineKg}</dd>
                     </div>
                     <div className="col-span-2">
-                      <dt className="text-stone-400">Total KG</dt>
-                      <dd className="font-medium">{formatKg(p.totalKg)}</dd>
+                      <dt className="text-stone-400">Original Amount</dt>
+                      <dd className="font-medium">{formatCurrency(p.originalAmount ?? p.totalAmount)}</dd>
                     </div>
                   </dl>
                   <div className="btn-stack mt-4">
                     <Button variant="ghost" onClick={() => setViewing(p)}>View</Button>
-                    <Button
-                      onClick={() => handleApprove(p.id)}
-                      disabled={actionLoading === p.id}
-                    >
-                      {actionLoading === p.id ? 'Approving...' : 'Approve'}
-                    </Button>
+                    <Button onClick={() => setApproving(p)}>Approve</Button>
                     <Button variant="danger" onClick={() => { setRejecting(p); setRejectionReason(''); }}>
                       Reject
                     </Button>
@@ -141,7 +139,7 @@ export default function ProductionApprovals() {
                     <th className="pb-3 pr-3 font-medium">Employee</th>
                     <th className="pb-3 pr-3 font-medium">Dry KG</th>
                     <th className="pb-3 pr-3 font-medium">Non-Machine KG</th>
-                    <th className="pb-3 pr-3 font-medium">Total KG</th>
+                    <th className="pb-3 pr-3 font-medium">Original</th>
                     <th className="pb-3 pr-3 font-medium">Status</th>
                     <th className="pb-3 font-medium">Actions</th>
                   </tr>
@@ -153,18 +151,12 @@ export default function ProductionApprovals() {
                       <td className="py-3 pr-3">{p.employeeName}</td>
                       <td className="py-3 pr-3">{p.dryMachineKg}</td>
                       <td className="py-3 pr-3">{p.nonMachineKg}</td>
-                      <td className="py-3 pr-3">{formatKg(p.totalKg)}</td>
+                      <td className="py-3 pr-3">{formatCurrency(p.originalAmount ?? p.totalAmount)}</td>
                       <td className="py-3 pr-3"><StatusBadge status={p.status} /></td>
                       <td className="py-3">
                         <div className="flex flex-wrap gap-1">
                           <Button size="sm" variant="ghost" onClick={() => setViewing(p)}>View</Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleApprove(p.id)}
-                            disabled={actionLoading === p.id}
-                          >
-                            Approve
-                          </Button>
+                          <Button size="sm" onClick={() => setApproving(p)}>Approve</Button>
                           <Button
                             size="sm"
                             variant="danger"
@@ -184,10 +176,14 @@ export default function ProductionApprovals() {
         )}
       </Card>
 
-      <ProductionDetailModal
-        open={!!viewing}
-        onClose={() => setViewing(null)}
-        production={viewing}
+      <ProductionDetailModal open={!!viewing} onClose={() => setViewing(null)} production={viewing} />
+
+      <ApprovalModal
+        open={!!approving}
+        onClose={() => setApproving(null)}
+        production={approving}
+        onApprove={handleApprove}
+        saving={saving}
       />
 
       <ProductionFormModal

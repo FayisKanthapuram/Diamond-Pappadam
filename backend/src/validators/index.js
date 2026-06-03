@@ -43,6 +43,16 @@ export const productionUpdateValidation = [
   body('notes').optional().isString().trim(),
 ];
 
+export const productionApproveValidation = [
+  param('id').isMongoId(),
+  body('bonusAmount').optional().isFloat({ min: 0 }).withMessage('Bonus must be zero or positive'),
+  body('deductionAmount')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Deduction must be zero or positive'),
+  body('adjustmentReason').optional().isString().trim(),
+];
+
 export const productionRejectValidation = [
   param('id').isMongoId(),
   body('rejectionReason').trim().notEmpty().withMessage('Rejection reason is required'),

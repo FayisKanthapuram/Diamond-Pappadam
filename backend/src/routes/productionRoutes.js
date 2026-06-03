@@ -15,6 +15,7 @@ import { requireAuth, requireAdmin, requireEmployee, requireActiveUser } from '.
 import {
   productionValidation,
   productionUpdateValidation,
+  productionApproveValidation,
   productionRejectValidation,
 } from '../validators/index.js';
 
@@ -24,7 +25,7 @@ router.post('/', requireAuth, requireEmployee, requireActiveUser, productionVali
 router.get('/me', requireAuth, requireEmployee, requireActiveUser, getMyProductions);
 router.get('/me/earnings', requireAuth, requireEmployee, requireActiveUser, getMyEarnings);
 router.get('/pending', requireAuth, requireAdmin, listPendingProductions);
-router.patch('/:id/approve', requireAuth, requireAdmin, param('id').isMongoId(), approveProduction);
+router.patch('/:id/approve', requireAuth, requireAdmin, productionApproveValidation, approveProduction);
 router.patch(
   '/:id/reject',
   requireAuth,

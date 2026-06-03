@@ -58,7 +58,17 @@ export async function updateProduction(req, res, next) {
 
 export async function approveProduction(req, res, next) {
   try {
-    const production = await approveProductionEntry(req.params.id, req.user.id);
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: errors.array()[0].msg });
+    }
+
+    const { bonusAmount = 0, deductionAmount = 0, adjustmentReason = '' } = req.body;
+    const production = await approveProductionEntry(req.params.id, req.user.id, {
+      bonusAmount,
+      deductionAmount,
+      adjustmentReason,
+    });
     res.json({ production });
   } catch (err) {
     next(err);
@@ -173,7 +183,10 @@ export async function getMyEarnings(req, res, next) {
           nonMachineKg: { $sum: '$nonMachineKg' },
           dryMachineAmount: { $sum: '$dryMachineAmount' },
           nonMachineAmount: { $sum: '$nonMachineAmount' },
-          totalAmount: { $sum: '$totalAmount' },
+          originalAmount: { $sum: '$totalAmount' },
+          bonusAmount: { $sum: { $ifNull: ['$bonusAmount', 0] } },
+          deductionAmount: { $sum: { $ifNull: ['$deductionAmount', 0] } },
+          netEarnings: { $sum: { $ifNull: ['$netAmount', '$totalAmount'] } },
           entryCount: { $sum: 1 },
         },
       },
@@ -184,7 +197,10 @@ export async function getMyEarnings(req, res, next) {
       nonMachineKg: 0,
       dryMachineAmount: 0,
       nonMachineAmount: 0,
-      totalAmount: 0,
+      originalAmount: 0,
+      bonusAmount: 0,
+      deductionAmount: 0,
+      netEarnings: 0,
       entryCount: 0,
     };
 
@@ -196,7 +212,10 @@ export async function getMyEarnings(req, res, next) {
       totalKg: data.dryMachineKg + data.nonMachineKg,
       dryMachineAmount: data.dryMachineAmount,
       nonMachineAmount: data.nonMachineAmount,
-      totalEarnings: data.totalAmount,
+      originalAmount: data.originalAmount,
+      bonusAmount: data.bonusAmount,
+      deductionAmount: data.deductionAmount,
+      totalEarnings: data.netEarnings,
       entryCount: data.entryCount,
     });
   } catch (err) {

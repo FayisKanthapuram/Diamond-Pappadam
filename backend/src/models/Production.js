@@ -12,6 +12,12 @@ const productionSchema = new mongoose.Schema(
     dryMachineAmount: { type: Number, required: true, min: 0 },
     nonMachineAmount: { type: Number, required: true, min: 0 },
     totalAmount: { type: Number, required: true, min: 0 },
+    bonusAmount: { type: Number, default: 0, min: 0 },
+    deductionAmount: { type: Number, default: 0, min: 0 },
+    adjustmentReason: { type: String, trim: true, default: '' },
+    netAmount: { type: Number, default: 0, min: 0 },
+    adjustedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    adjustedAt: { type: Date, default: null },
     notes: { type: String, trim: true, default: '' },
     status: {
       type: String,

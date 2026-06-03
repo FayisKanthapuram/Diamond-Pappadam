@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { dashboardApi } from '../../api/index.js';
 import StatCard from '../../components/StatCard.jsx';
@@ -11,14 +11,20 @@ import { formatCurrency, formatDate, formatKg } from '../../utils/format.js';
 export default function EmployeeDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
 
-  useEffect(() => {
+  const loadDashboard = useCallback(() => {
+    setLoading(true);
     dashboardApi
       .employee()
       .then((res) => setData(res.data))
       .catch((err) => toast.error(err.response?.data?.message || 'Failed to load dashboard'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard, location.key]);
 
   if (loading) return <p className="py-8 text-center text-stone-500">Loading...</p>;
   if (!data) return null;
@@ -60,7 +66,7 @@ export default function EmployeeDashboard() {
                   <p className="mt-1 text-sm text-stone-500">{formatKg(p.totalKg)}</p>
                   {p.status === 'approved' && (
                     <p className="mt-1 text-sm font-semibold text-brand-700">
-                      {formatCurrency(p.totalAmount)}
+                      Net: {formatCurrency(p.netAmount ?? p.totalAmount)}
                     </p>
                   )}
                   {p.status === 'rejected' && p.rejectionReason && (
@@ -87,7 +93,7 @@ export default function EmployeeDashboard() {
                       <td className="py-2 pr-3"><StatusBadge status={p.status} /></td>
                       <td className="py-2 pr-3">{formatKg(p.totalKg)}</td>
                       <td className="py-2">
-                        {p.status === 'approved' ? formatCurrency(p.totalAmount) : '—'}
+                        {p.status === 'approved' ? formatCurrency(p.netAmount ?? p.totalAmount) : '—'}
                       </td>
                     </tr>
                   ))}
