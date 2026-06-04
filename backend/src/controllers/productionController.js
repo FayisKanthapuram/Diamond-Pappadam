@@ -4,6 +4,7 @@ import {
   updateProductionEntry,
   deleteProductionEntry,
   listProductionEntries,
+  listProductionReportRows,
   approveProductionEntry,
   rejectProductionEntry,
 } from '../services/productionService.js';
@@ -19,13 +20,12 @@ export async function createProduction(req, res, next) {
       return res.status(400).json({ message: errors.array()[0].msg });
     }
 
-    const { date, dryMachineKg = 0, nonMachineKg = 0, notes } = req.body;
+    const { date, items, notes } = req.body;
     const production = await createProductionEntry({
       employeeId: req.user.id,
       createdBy: req.user.id,
       date,
-      dryMachineKg: Number(dryMachineKg),
-      nonMachineKg: Number(nonMachineKg),
+      items,
       notes,
     });
 
@@ -42,11 +42,10 @@ export async function updateProduction(req, res, next) {
       return res.status(400).json({ message: errors.array()[0].msg });
     }
 
-    const { date, dryMachineKg, nonMachineKg, notes } = req.body;
+    const { date, items, notes } = req.body;
     const production = await updateProductionEntry(req.params.id, req.user, {
       date,
-      dryMachineKg: dryMachineKg !== undefined ? Number(dryMachineKg) : undefined,
-      nonMachineKg: nonMachineKg !== undefined ? Number(nonMachineKg) : undefined,
+      items,
       notes,
     });
 
@@ -122,6 +121,9 @@ export async function listProductions(req, res, next) {
         from: req.query.from,
         to: req.query.to,
         status: req.query.status,
+        gramTypeId: req.query.gramTypeId,
+        qualityTypeId: req.query.qualityTypeId,
+        method: req.query.method,
       },
       { isAdmin: true, userId: req.user.id }
     );
@@ -145,16 +147,18 @@ export async function listPendingProductions(req, res, next) {
 
 export async function getProductionReport(req, res, next) {
   try {
-    const productions = await listProductionEntries(
+    const rows = await listProductionReportRows(
       {
         employeeId: req.query.employeeId,
         from: req.query.from,
         to: req.query.to,
-        approvedOnly: true,
+        gramTypeId: req.query.gramTypeId,
+        qualityTypeId: req.query.qualityTypeId,
+        method: req.query.method,
       },
-      { isAdmin: true, userId: req.user.id }
+      { userId: req.user.id }
     );
-    res.json({ productions });
+    res.json({ rows });
   } catch (err) {
     next(err);
   }

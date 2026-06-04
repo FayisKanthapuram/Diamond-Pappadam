@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { User } from '../models/User.js';
 import { Settings } from '../models/Settings.js';
+import { GramType } from '../models/GramType.js';
+import { QualityType } from '../models/QualityType.js';
 
 dotenv.config();
 
@@ -47,6 +49,26 @@ async function seed() {
     { upsert: true, new: true }
   );
   console.log('Settings: Dry Machine ₹12/kg, Non-Machine ₹10/kg');
+
+  const gramNames = ['3g', '4g', '5g', '6g'];
+  for (let i = 0; i < gramNames.length; i++) {
+    await GramType.findOneAndUpdate(
+      { name: gramNames[i] },
+      { name: gramNames[i], active: true, sortOrder: i },
+      { upsert: true }
+    );
+  }
+  console.log('Gram types:', gramNames.join(', '));
+
+  const qualityNames = ['1st', '2nd', '3rd'];
+  for (let i = 0; i < qualityNames.length; i++) {
+    await QualityType.findOneAndUpdate(
+      { name: qualityNames[i] },
+      { name: qualityNames[i], active: true, sortOrder: i },
+      { upsert: true }
+    );
+  }
+  console.log('Quality types:', qualityNames.join(', '));
 
   console.log('\nSeed complete.');
   console.log(`Admin login phone: ${adminPhone}`);

@@ -71,16 +71,18 @@ App: **http://localhost:5173**
 - **Employees**: create entries; edit only entries **created today**
 - **Admin**: edit or delete any entry
 
-### Payroll
+### Salary Ledger
 
-- Generated from **stored** `totalAmount` on production records (not current rates)
-- Paid payroll rows are not overwritten on regenerate
+- **Total Earned** = sum of approved production **net** amounts (lifetime)
+- **Total Paid** = sum of all salary payments recorded by admin
+- **Balance** = Total Earned − Total Paid
+- Admin records payments (weekly, advance, partial, etc.); payments never change production earnings
 
 ### Dashboards
 
-**Admin:** today/month production kg, today/month salary cost, active employees
+**Admin:** production stats, outstanding salary liability (sum of positive balances), active employees
 
-**Employee:** today/month production, estimated month earnings, recent entries
+**Employee:** production stats, current salary balance, recent entries
 
 ## Login
 
@@ -103,7 +105,8 @@ App: **http://localhost:5173**
 | GET | `/api/productions/pending` | Admin — pending approvals |
 | PATCH | `/api/productions/:id/approve` | Admin |
 | PATCH | `/api/productions/:id/reject` | Admin |
-| POST | `/api/payroll/generate` | Admin |
+| GET/POST | `/api/salary-ledger` | Admin summaries / employee payments |
+| GET | `/api/salary-ledger/me` | Employee read-only ledger |
 
 ## Environment Variables
 

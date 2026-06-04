@@ -5,3 +5,13 @@ export const PRODUCTION_STATUS = {
   APPROVED: 'approved',
   REJECTED: 'rejected',
 };
+
+export const PRODUCTION_ITEM_TYPE = {
+  NORMAL: 'normal',
+  SPECIAL: 'special',
+};
+
+export const PRODUCTION_METHOD = {
+  DRY: 'dry',
+  NON: 'non',
+};

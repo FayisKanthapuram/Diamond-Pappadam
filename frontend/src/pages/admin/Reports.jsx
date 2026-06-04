@@ -1,38 +1,46 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { reportsApi, employeesApi, productionsApi } from '../../api/index.js';
-import Button from '../../components/ui/Button.jsx';
+import { reportsApi, employeesApi, gramTypesApi, qualityTypesApi } from '../../api/index.js';
 import Card from '../../components/ui/Card.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { FilterSelect, FilterDate, FilterActions } from '../../components/FilterBar.jsx';
-import ProductionFormModal from '../../components/ProductionFormModal.jsx';
-import StatusBadge from '../../components/StatusBadge.jsx';
-import ProductionAmountBreakdown from '../../components/ProductionAmountBreakdown.jsx';
-import { formatCurrency, formatDate } from '../../utils/format.js';
+import { formatDate } from '../../utils/format.js';
 
 export default function Reports() {
-  const [productions, setProductions] = useState([]);
+  const [rows, setRows] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [gramTypes, setGramTypes] = useState([]);
+  const [qualityTypes, setQualityTypes] = useState([]);
   const [employeeId, setEmployeeId] = useState('');
+  const [gramTypeId, setGramTypeId] = useState('');
+  const [qualityTypeId, setQualityTypeId] = useState('');
+  const [method, setMethod] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [loading, setLoading] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    employeesApi.list().then((res) => setEmployees(res.data.employees)).catch(() => {});
+    Promise.all([employeesApi.list(), gramTypesApi.list(), qualityTypesApi.list()])
+      .then(([empRes, gramRes, qualityRes]) => {
+        setEmployees(empRes.data.employees);
+        setGramTypes(gramRes.data.gramTypes);
+        setQualityTypes(qualityRes.data.qualityTypes);
+      })
+      .catch(() => {});
   }, []);
 
   function load() {
     setLoading(true);
     const params = {};
     if (employeeId) params.employeeId = employeeId;
+    if (gramTypeId) params.gramTypeId = gramTypeId;
+    if (qualityTypeId) params.qualityTypeId = qualityTypeId;
+    if (method) params.method = method;
     if (from) params.from = from;
     if (to) params.to = to;
     reportsApi
       .production(params)
-      .then((res) => setProductions(res.data.productions))
+      .then((res) => setRows(res.data.rows || []))
       .catch((err) => toast.error(err.response?.data?.message || 'Failed to load report'))
       .finally(() => setLoading(false));
   }
@@ -41,42 +49,63 @@ export default function Reports() {
     load();
   }, []);
 
-  async function handleUpdate(payload) {
-    setSaving(true);
-    try {
-      await productionsApi.update(editing.id, payload);
-      toast.success('Production updated');
-      setEditing(null);
-      load();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Update failed');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDelete(id) {
-    if (!window.confirm('Delete this production entry?')) return;
-    try {
-      await productionsApi.delete(id);
-      toast.success('Entry deleted');
-      load();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Delete failed');
-    }
-  }
-
   return (
     <div>
-      <PageHeader title="Production Reports" subtitle="Approved production entries only." />
+      <PageHeader
+        title="Production Reports"
+        subtitle="One row per production line item (approved entries only)."
+      />
 
       <Card className="mb-4 sm:mb-6">
         <div className="filter-stack">
-          <FilterSelect label="Employee" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="sm:min-w-[180px]">
+          <FilterSelect
+            label="Employee"
+            value={employeeId}
+            onChange={(e) => setEmployeeId(e.target.value)}
+            className="sm:min-w-[160px]"
+          >
             <option value="">All Employees</option>
             {employees.map((e) => (
-              <option key={e.id} value={e.id}>{e.name}</option>
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
             ))}
+          </FilterSelect>
+          <FilterSelect
+            label="Gram"
+            value={gramTypeId}
+            onChange={(e) => setGramTypeId(e.target.value)}
+            className="sm:min-w-[120px]"
+          >
+            <option value="">All Grams</option>
+            {gramTypes.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </FilterSelect>
+          <FilterSelect
+            label="Quality"
+            value={qualityTypeId}
+            onChange={(e) => setQualityTypeId(e.target.value)}
+            className="sm:min-w-[120px]"
+          >
+            <option value="">All Qualities</option>
+            {qualityTypes.map((q) => (
+              <option key={q.id} value={q.id}>
+                {q.name}
+              </option>
+            ))}
+          </FilterSelect>
+          <FilterSelect
+            label="Method"
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+            className="sm:min-w-[140px]"
+          >
+            <option value="">All Methods</option>
+            <option value="dry">Dry Machine</option>
+            <option value="non">Non-Machine</option>
           </FilterSelect>
           <FilterDate label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
           <FilterDate label="To" value={to} onChange={(e) => setTo(e.target.value)} />
@@ -87,49 +116,43 @@ export default function Reports() {
       <Card>
         {loading ? (
           <p className="text-stone-500">Loading...</p>
-        ) : productions.length === 0 ? (
+        ) : rows.length === 0 ? (
           <p className="py-8 text-center text-stone-500">No records found.</p>
         ) : (
           <>
             <div className="data-card-list">
-              {productions.map((p) => (
-                <div key={p.id} className="data-card">
-                  <div className="flex items-start justify-between gap-2">
+              {rows.map((r, i) => (
+                <div key={`${r.productionId}-${r.itemId || i}`} className="data-card text-sm">
+                  <p className="font-semibold text-stone-900">{r.employeeName}</p>
+                  <p className="text-stone-500">{formatDate(r.date)}</p>
+                  <dl className="mt-2 grid grid-cols-2 gap-2">
                     <div>
-                      <p className="font-semibold text-stone-900">{p.employeeName}</p>
-                      <p className="text-sm text-stone-500">{formatDate(p.date)}</p>
-                    </div>
-                    <StatusBadge status={p.status} />
-                  </div>
-                  <div className="mt-3">
-                    <ProductionAmountBreakdown production={p} compact />
-                  </div>
-                  <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <dt className="text-stone-400">Dry KG</dt>
-                      <dd className="font-medium">{p.dryMachineKg}</dd>
+                      <dt className="text-stone-400">Type</dt>
+                      <dd>{r.productionType}</dd>
                     </div>
                     <div>
-                      <dt className="text-stone-400">Non-Machine</dt>
-                      <dd className="font-medium">{p.nonMachineKg}</dd>
+                      <dt className="text-stone-400">Method</dt>
+                      <dd>{r.method}</dd>
                     </div>
-                    <div className="col-span-2">
-                      <dt className="text-stone-400">Rates (snapshot)</dt>
-                      <dd className="text-xs text-stone-600">
-                        {formatCurrency(p.dryMachineRate)}/kg · {formatCurrency(p.nonMachineRate)}/kg
-                      </dd>
+                    <div>
+                      <dt className="text-stone-400">Gram</dt>
+                      <dd>{r.gram}</dd>
                     </div>
-                    {p.notes && (
+                    <div>
+                      <dt className="text-stone-400">Quality</dt>
+                      <dd>{r.quality}</dd>
+                    </div>
+                    {r.specialType && r.specialType !== '—' && (
                       <div className="col-span-2">
-                        <dt className="text-stone-400">Notes</dt>
-                        <dd>{p.notes}</dd>
+                        <dt className="text-stone-400">Special Type</dt>
+                        <dd>{r.specialType}</dd>
                       </div>
                     )}
+                    <div>
+                      <dt className="text-stone-400">KG</dt>
+                      <dd className="font-medium">{r.kg}</dd>
+                    </div>
                   </dl>
-                  <div className="btn-stack mt-4">
-                    <Button variant="ghost" onClick={() => setEditing(p)}>Edit</Button>
-                    <Button variant="danger" onClick={() => handleDelete(p.id)}>Delete</Button>
-                  </div>
                 </div>
               ))}
             </div>
@@ -140,36 +163,25 @@ export default function Reports() {
                   <tr className="border-b border-stone-200 text-stone-500">
                     <th className="pb-3 pr-3 font-medium">Date</th>
                     <th className="pb-3 pr-3 font-medium">Employee</th>
-                    <th className="pb-3 pr-3 font-medium">Status</th>
-                    <th className="pb-3 pr-3 font-medium">Dry KG</th>
-                    <th className="pb-3 pr-3 font-medium">Non-Machine KG</th>
-                    <th className="pb-3 pr-3 font-medium">Original</th>
-                    <th className="pb-3 pr-3 font-medium">Bonus</th>
-                    <th className="pb-3 pr-3 font-medium">Deduction</th>
-                    <th className="pb-3 pr-3 font-medium">Net</th>
-                    <th className="pb-3 pr-3 font-medium">Reason</th>
-                    <th className="pb-3 font-medium">Actions</th>
+                    <th className="pb-3 pr-3 font-medium">Production Type</th>
+                    <th className="pb-3 pr-3 font-medium">Gram</th>
+                    <th className="pb-3 pr-3 font-medium">Quality</th>
+                    <th className="pb-3 pr-3 font-medium">Special Type</th>
+                    <th className="pb-3 pr-3 font-medium">Method</th>
+                    <th className="pb-3 font-medium">KG</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {productions.map((p) => (
-                    <tr key={p.id} className="border-b border-stone-100">
-                      <td className="py-3 pr-3">{formatDate(p.date)}</td>
-                      <td className="py-3 pr-3">{p.employeeName}</td>
-                      <td className="py-3 pr-3"><StatusBadge status={p.status} /></td>
-                      <td className="py-3 pr-3">{p.dryMachineKg}</td>
-                      <td className="py-3 pr-3">{p.nonMachineKg}</td>
-                      <td className="py-3 pr-3">{formatCurrency(p.originalAmount ?? p.totalAmount)}</td>
-                      <td className="py-3 pr-3 text-emerald-700">+{formatCurrency(p.bonusAmount ?? 0)}</td>
-                      <td className="py-3 pr-3 text-red-700">−{formatCurrency(p.deductionAmount ?? 0)}</td>
-                      <td className="py-3 pr-3 font-medium">{formatCurrency(p.netAmount ?? p.totalAmount)}</td>
-                      <td className="py-3 pr-3 text-stone-500">{p.adjustmentReason || p.notes || '—'}</td>
-                      <td className="py-3">
-                        <div className="flex flex-wrap gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => setEditing(p)}>Edit</Button>
-                          <Button size="sm" variant="danger" onClick={() => handleDelete(p.id)}>Delete</Button>
-                        </div>
-                      </td>
+                  {rows.map((r, i) => (
+                    <tr key={`${r.productionId}-${r.itemId || i}`} className="border-b border-stone-100">
+                      <td className="py-3 pr-3">{formatDate(r.date)}</td>
+                      <td className="py-3 pr-3">{r.employeeName}</td>
+                      <td className="py-3 pr-3">{r.productionType}</td>
+                      <td className="py-3 pr-3">{r.gram}</td>
+                      <td className="py-3 pr-3">{r.quality}</td>
+                      <td className="py-3 pr-3">{r.specialType}</td>
+                      <td className="py-3 pr-3">{r.method}</td>
+                      <td className="py-3">{r.kg}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -178,15 +190,6 @@ export default function Reports() {
           </>
         )}
       </Card>
-
-      <ProductionFormModal
-        open={!!editing}
-        onClose={() => setEditing(null)}
-        onSubmit={handleUpdate}
-        initial={editing}
-        title="Edit Production"
-        saving={saving}
-      />
     </div>
   );
 }

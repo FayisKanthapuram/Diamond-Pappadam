@@ -10,6 +10,7 @@ import ProductionFormModal from '../../components/ProductionFormModal.jsx';
 import ProductionDetailModal from '../../components/ProductionDetailModal.jsx';
 import ApprovalModal from '../../components/ApprovalModal.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
+import ProductionItemsTable from '../../components/ProductionItemsTable.jsx';
 import { formatCurrency, formatDate, formatKg } from '../../utils/format.js';
 
 export default function ProductionApprovals() {
@@ -119,6 +120,9 @@ export default function ProductionApprovals() {
                       <dd className="font-medium">{formatCurrency(p.originalAmount ?? p.totalAmount)}</dd>
                     </div>
                   </dl>
+                  <div className="mt-2">
+                    <ProductionItemsTable items={p.items} compact />
+                  </div>
                   <div className="btn-stack mt-4">
                     <Button variant="ghost" onClick={() => setViewing(p)}>View</Button>
                     <Button onClick={() => setApproving(p)}>Approve</Button>

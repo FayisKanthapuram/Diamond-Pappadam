@@ -28,19 +28,44 @@ export const settingsValidation = [
   body('nonMachineRate').isFloat({ min: 0 }).withMessage('Non-machine rate must be a positive number'),
 ];
 
+export const lookupTypeValidation = [
+  body('name').optional().trim().notEmpty().withMessage('Name is required'),
+  body('active').optional().isBoolean(),
+];
+
+export const productionItemValidation = [
+  body('items').isArray({ min: 1 }).withMessage('At least one production row is required'),
+  body('items.*.type').isIn(['normal', 'special']).withMessage('Invalid row type'),
+  body('items.*.method').isIn(['dry', 'non']).withMessage('Invalid production method'),
+  body('items.*.kg').isFloat({ min: 0.01 }).withMessage('KG must be greater than 0'),
+  body('items.*.gramTypeId').optional().isMongoId(),
+  body('items.*.qualityTypeId').optional().isMongoId(),
+  body('items.*.specialType').optional().isString().trim(),
+];
+
 export const productionValidation = [
   body('date').notEmpty().withMessage('Date is required'),
-  body('dryMachineKg').optional().isFloat({ min: 0 }),
-  body('nonMachineKg').optional().isFloat({ min: 0 }),
   body('notes').optional().isString().trim(),
+  body('items').isArray({ min: 1 }).withMessage('At least one production row is required'),
+  body('items.*.type').isIn(['normal', 'special']).withMessage('Invalid row type'),
+  body('items.*.method').isIn(['dry', 'non']).withMessage('Invalid production method'),
+  body('items.*.kg').isFloat({ min: 0.01 }).withMessage('KG must be greater than 0'),
+  body('items.*.gramTypeId').optional().isMongoId(),
+  body('items.*.qualityTypeId').optional().isMongoId(),
+  body('items.*.specialType').optional().isString().trim(),
 ];
 
 export const productionUpdateValidation = [
   param('id').isMongoId(),
   body('date').optional().notEmpty(),
-  body('dryMachineKg').optional().isFloat({ min: 0 }),
-  body('nonMachineKg').optional().isFloat({ min: 0 }),
   body('notes').optional().isString().trim(),
+  body('items').optional().isArray({ min: 1 }),
+  body('items.*.type').optional().isIn(['normal', 'special']),
+  body('items.*.method').optional().isIn(['dry', 'non']),
+  body('items.*.kg').optional().isFloat({ min: 0.01 }),
+  body('items.*.gramTypeId').optional().isMongoId(),
+  body('items.*.qualityTypeId').optional().isMongoId(),
+  body('items.*.specialType').optional().isString().trim(),
 ];
 
 export const productionApproveValidation = [
@@ -58,13 +83,8 @@ export const productionRejectValidation = [
   body('rejectionReason').trim().notEmpty().withMessage('Rejection reason is required'),
 ];
 
-export const payrollGenerateValidation = [
-  body('month').isInt({ min: 1, max: 12 }).withMessage('Month must be 1-12'),
-  body('year').isInt({ min: 2020 }).withMessage('Valid year is required'),
-];
-
-export const payrollUpdateValidation = [
-  param('id').isMongoId(),
-  body('paymentDate').optional().isISO8601(),
-  body('notes').optional().isString(),
+export const salaryPaymentValidation = [
+  body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be greater than 0'),
+  body('date').notEmpty().withMessage('Payment date is required'),
+  body('note').optional().isString().trim(),
 ];

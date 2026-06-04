@@ -39,7 +39,7 @@ export default function Landing() {
           <RoleCard
             icon="👨‍💼"
             title="Admin"
-            description="Manage production, approvals, payroll and reports."
+            description="Manage production, approvals, salary ledger and reports."
             to="/admin/login"
           />
           <RoleCard

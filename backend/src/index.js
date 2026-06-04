@@ -9,9 +9,11 @@ import authRoutes from './routes/authRoutes.js';
 import employeeRoutes from './routes/employeeRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import productionRoutes from './routes/productionRoutes.js';
+import gramTypeRoutes from './routes/gramTypeRoutes.js';
+import qualityTypeRoutes from './routes/qualityTypeRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
-import payrollRoutes from './routes/payrollRoutes.js';
+import salaryLedgerRoutes from './routes/salaryLedgerRoutes.js';
 
 const app = express();
 
@@ -25,9 +27,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/productions', productionRoutes);
+app.use('/api/gram-types', gramTypeRoutes);
+app.use('/api/quality-types', qualityTypeRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/payroll', payrollRoutes);
+app.use('/api/salary-ledger', salaryLedgerRoutes);
 
 app.use(errorHandler);
 

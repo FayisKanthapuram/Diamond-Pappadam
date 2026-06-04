@@ -6,7 +6,7 @@ import EmployeeChangePassword from '../pages/employee/ChangePassword.jsx';
 import EmployeeDashboard from '../pages/employee/Dashboard.jsx';
 import AddProduction from '../pages/employee/AddProduction.jsx';
 import MyProduction from '../pages/employee/MyProduction.jsx';
-import MyEarnings from '../pages/employee/MyEarnings.jsx';
+import MySalaryLedger from '../pages/employee/MySalaryLedger.jsx';
 
 export default function EmployeeRoutes() {
   return (
@@ -31,7 +31,8 @@ export default function EmployeeRoutes() {
         <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
         <Route path="/employee/production" element={<AddProduction />} />
         <Route path="/employee/history" element={<MyProduction />} />
-        <Route path="/employee/earnings" element={<MyEarnings />} />
+        <Route path="/employee/salary-ledger" element={<MySalaryLedger />} />
+        <Route path="/employee/earnings" element={<Navigate to="/employee/salary-ledger" replace />} />
       </Route>
     </>
   );

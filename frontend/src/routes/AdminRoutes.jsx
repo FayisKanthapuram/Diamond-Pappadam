@@ -6,7 +6,8 @@ import AdminChangePassword from '../pages/admin/ChangePassword.jsx';
 import AdminDashboard from '../pages/admin/Dashboard.jsx';
 import Employees from '../pages/admin/Employees.jsx';
 import Reports from '../pages/admin/Reports.jsx';
-import Payroll from '../pages/admin/Payroll.jsx';
+import SalaryLedger from '../pages/admin/SalaryLedger.jsx';
+import SalaryLedgerDetail from '../pages/admin/SalaryLedgerDetail.jsx';
 import ProductionApprovals from '../pages/admin/ProductionApprovals.jsx';
 import Settings from '../pages/admin/Settings.jsx';
 
@@ -34,7 +35,10 @@ export default function AdminRoutes() {
         <Route path="/admin/employees" element={<Employees />} />
         <Route path="/admin/reports" element={<Reports />} />
         <Route path="/admin/approvals" element={<ProductionApprovals />} />
-        <Route path="/admin/payroll" element={<Payroll />} />
+        <Route path="/admin/salary-ledger" element={<SalaryLedger />} />
+        <Route path="/admin/salary-ledger/:employeeId" element={<SalaryLedgerDetail />} />
+        <Route path="/admin/payroll" element={<Navigate to="/admin/salary-ledger" replace />} />
+        <Route path="/admin/payroll/*" element={<Navigate to="/admin/salary-ledger" replace />} />
         <Route path="/admin/settings" element={<Settings />} />
       </Route>
     </>

@@ -6,7 +6,7 @@ const employeeLinks = [
   { to: '/employee/dashboard', label: 'Dashboard' },
   { to: '/employee/production', label: 'Add Production' },
   { to: '/employee/history', label: 'Production History' },
-  { to: '/employee/earnings', label: 'My Earnings' },
+  { to: '/employee/salary-ledger', label: 'Salary Ledger' },
 ];
 
 export default function EmployeeSidebar({ open, onClose }) {

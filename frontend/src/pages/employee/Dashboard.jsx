@@ -49,7 +49,16 @@ export default function EmployeeDashboard() {
         <StatCard
           label="Approved Earnings (Month)"
           value={formatCurrency(data.estimatedEarnings)}
-          sub="Approved entries only"
+          sub="This month only"
+        />
+        <StatCard
+          label="Current Balance"
+          value={formatCurrency(data.balance)}
+          sub={
+            <Link to="/employee/salary-ledger" className="text-brand-700 hover:underline">
+              View salary ledger →
+            </Link>
+          }
         />
       </div>
 

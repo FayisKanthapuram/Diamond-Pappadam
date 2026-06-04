@@ -58,6 +58,15 @@ export default function AdminDashboard() {
           value={formatCurrency(data.monthSalaryCost)}
           sub="From approved production"
         />
+        <StatCard
+          label="Outstanding Salary Liability"
+          value={formatCurrency(data.outstandingSalaryLiability)}
+          sub={
+            <Link to="/admin/salary-ledger" className="text-brand-700 hover:underline">
+              View salary ledger →
+            </Link>
+          }
+        />
         <StatCard label="Active Employees" value={data.activeEmployees} />
       </div>
     </div>

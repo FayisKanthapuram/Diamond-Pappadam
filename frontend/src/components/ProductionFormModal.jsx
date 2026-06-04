@@ -2,6 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import Modal from './ui/Modal.jsx';
 import Input from './ui/Input.jsx';
 import Button from './ui/Button.jsx';
+import { settingsApi, gramTypesApi, qualityTypesApi } from '../api/index.js';
+import ProductionItemsEditor, {
+  productionToRows,
+  rowsToPayload,
+  sumRowsForPreview,
+} from './ProductionItemsEditor.jsx';
 import { formatCurrency } from '../utils/format.js';
 
 export default function ProductionFormModal({
@@ -9,45 +15,63 @@ export default function ProductionFormModal({
   onClose,
   onSubmit,
   initial,
-  rates,
+  rates: ratesProp,
   title,
   saving,
 }) {
   const [date, setDate] = useState('');
-  const [dryMachineKg, setDryMachineKg] = useState('');
-  const [nonMachineKg, setNonMachineKg] = useState('');
+  const [rows, setRows] = useState([]);
   const [notes, setNotes] = useState('');
+  const [rates, setRates] = useState(ratesProp);
+  const [gramTypes, setGramTypes] = useState([]);
+  const [qualityTypes, setQualityTypes] = useState([]);
+
+  useEffect(() => {
+    if (!open) return;
+    Promise.all([
+      ratesProp ? Promise.resolve({ data: ratesProp }) : settingsApi.get(),
+      gramTypesApi.list(),
+      qualityTypesApi.list(),
+    ]).then(([ratesRes, gramRes, qualityRes]) => {
+      if (!ratesProp) setRates(ratesRes.data);
+      setGramTypes(gramRes.data.gramTypes.filter((g) => g.active));
+      setQualityTypes(qualityRes.data.qualityTypes.filter((q) => q.active));
+    });
+  }, [open, ratesProp]);
 
   useEffect(() => {
     if (open && initial) {
       setDate(initial.date ? new Date(initial.date).toISOString().split('T')[0] : '');
-      setDryMachineKg(String(initial.dryMachineKg ?? ''));
-      setNonMachineKg(String(initial.nonMachineKg ?? ''));
+      setRows(productionToRows(initial));
       setNotes(initial.notes || '');
+      if (initial.dryMachineRate != null) {
+        setRates({
+          dryMachineRate: initial.dryMachineRate,
+          nonMachineRate: initial.nonMachineRate,
+        });
+      }
     } else if (open && !initial) {
       setDate(new Date().toISOString().split('T')[0]);
-      setDryMachineKg('');
-      setNonMachineKg('');
+      setRows(productionToRows(null));
       setNotes('');
     }
   }, [open, initial]);
 
   const preview = useMemo(() => {
-    const dry = parseFloat(dryMachineKg) || 0;
-    const non = parseFloat(nonMachineKg) || 0;
+    if (!rates) return null;
+    const { dryMachineKg, nonMachineKg } = sumRowsForPreview(rows);
     const dryRate = initial?.dryMachineRate ?? rates?.dryMachineRate ?? 0;
     const nonRate = initial?.nonMachineRate ?? rates?.nonMachineRate ?? 0;
-    const dryAmt = dry * dryRate;
-    const nonAmt = non * nonRate;
-    return { dryAmt, nonAmt, total: dryAmt + nonAmt, dryRate, nonRate };
-  }, [dryMachineKg, nonMachineKg, initial, rates]);
+    const dryAmt = dryMachineKg * dryRate;
+    const nonAmt = nonMachineKg * nonRate;
+    return { dryMachineKg, nonMachineKg, dryAmt, nonAmt, total: dryAmt + nonAmt, dryRate, nonRate };
+  }, [rows, initial, rates]);
 
   function handleSubmit(e) {
     e.preventDefault();
     onSubmit({
       date,
-      dryMachineKg: parseFloat(dryMachineKg) || 0,
-      nonMachineKg: parseFloat(nonMachineKg) || 0,
+      items: rowsToPayload(rows),
       notes,
     });
   }
@@ -56,15 +80,34 @@ export default function ProductionFormModal({
     <Modal open={open} onClose={onClose} title={title}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-        <Input label="Dry Machine KG" type="number" min="0" step="0.01" value={dryMachineKg} onChange={(e) => setDryMachineKg(e.target.value)} />
-        <Input label="Non-Machine KG" type="number" min="0" step="0.01" value={nonMachineKg} onChange={(e) => setNonMachineKg(e.target.value)} />
-        <Input label="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Overtime, correction, etc." />
-        {(preview.dryRate > 0 || preview.nonRate > 0) && (
+
+        <ProductionItemsEditor
+          rows={rows}
+          onChange={setRows}
+          gramTypes={gramTypes}
+          qualityTypes={qualityTypes}
+        />
+
+        <Input
+          label="Notes (optional)"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Overtime, correction, etc."
+        />
+
+        {preview && (preview.dryRate > 0 || preview.nonRate > 0) && (
           <div className="rounded-lg bg-brand-50 p-3 text-sm">
-            <p>Rates: {formatCurrency(preview.dryRate)}/kg dry · {formatCurrency(preview.nonRate)}/kg non-machine</p>
-            <p className="mt-1 font-semibold">Total: {formatCurrency(preview.total)}</p>
+            <p>
+              Totals: Dry {preview.dryMachineKg} kg · Non-Machine {preview.nonMachineKg} kg
+            </p>
+            <p>
+              Rates: {formatCurrency(preview.dryRate)}/kg dry · {formatCurrency(preview.nonRate)}
+              /kg non-machine
+            </p>
+            <p className="mt-1 font-semibold">Estimated original: {formatCurrency(preview.total)}</p>
           </div>
         )}
+
         <div className="btn-stack">
           <Button type="submit" className="!w-full sm:!w-auto" disabled={saving}>
             {saving ? 'Saving...' : 'Save'}

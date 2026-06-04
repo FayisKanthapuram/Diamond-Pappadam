@@ -1,20 +1,36 @@
 import mongoose from 'mongoose';
 import { Production } from '../models/Production.js';
+import { GramType } from '../models/GramType.js';
+import { QualityType } from '../models/QualityType.js';
 import { getRates } from './settingsService.js';
-import {
-  buildProductionFromRates,
-  recalculateFromStoredRates,
-  calculateNetAmount,
-} from '../utils/calculations.js';
+import { buildProductionFromRates, calculateNetAmount } from '../utils/calculations.js';
 import { startOfDay } from '../utils/dates.js';
 import { createError } from '../middleware/errorHandler.js';
 import { PRODUCTION_STATUS } from '../config/constants.js';
+import {
+  sumKgByMethod,
+  validateAndNormalizeItems,
+  formatItemsForResponse,
+  legacyItemsFromProduction,
+  expandProductionToReportRows,
+} from '../utils/productionItems.js';
 
 function pendingStatusQuery() {
   return { $in: [PRODUCTION_STATUS.PENDING, null] };
 }
 
-export function formatProduction(doc) {
+async function loadLookupMaps() {
+  const [grams, qualities] = await Promise.all([
+    GramType.find().lean(),
+    QualityType.find().lean(),
+  ]);
+  return {
+    gramMap: new Map(grams.map((g) => [g._id.toString(), g])),
+    qualityMap: new Map(qualities.map((q) => [q._id.toString(), q])),
+  };
+}
+
+export function formatProduction(doc, lookup = null) {
   const emp = doc.employeeId;
   const createdBy = doc.createdBy;
   const approvedBy = doc.approvedBy;
@@ -27,13 +43,23 @@ export function formatProduction(doc) {
       ? doc.netAmount
       : calculateNetAmount(originalAmount, bonusAmount, deductionAmount);
 
+  const gramMap = lookup?.gramMap;
+  const qualityMap = lookup?.qualityMap;
+  const items =
+    doc.items?.length > 0
+      ? formatItemsForResponse(doc.items, gramMap, qualityMap)
+      : legacyItemsFromProduction(doc);
+
   return {
     id: doc._id.toString(),
     employeeId: emp?._id?.toString() || doc.employeeId?.toString(),
     employeeName: emp?.name || undefined,
     date: doc.date,
-    dryMachineKg: doc.dryMachineKg,
-    nonMachineKg: doc.nonMachineKg,
+    items,
+    dryMachineKg: doc.dryMachineKg ?? 0,
+    nonMachineKg: doc.nonMachineKg ?? 0,
+    totalDryKg: doc.dryMachineKg ?? 0,
+    totalNonMachineKg: doc.nonMachineKg ?? 0,
     dryMachineRate: doc.dryMachineRate,
     nonMachineRate: doc.nonMachineRate,
     dryMachineAmount: doc.dryMachineAmount,
@@ -44,7 +70,7 @@ export function formatProduction(doc) {
     deductionAmount,
     adjustmentReason: doc.adjustmentReason || '',
     netAmount,
-    totalKg: doc.dryMachineKg + doc.nonMachineKg,
+    totalKg: (doc.dryMachineKg ?? 0) + (doc.nonMachineKg ?? 0),
     notes: doc.notes || '',
     status: doc.status || PRODUCTION_STATUS.PENDING,
     approvedBy: approvedBy?._id?.toString() || doc.approvedBy?.toString() || null,
@@ -62,7 +88,7 @@ export function formatProduction(doc) {
   };
 }
 
-function attachCanEdit(productions, { isAdmin, userId }) {
+function attachCanEdit(productions, { isAdmin, userId }, lookup) {
   return productions.map((p) => {
     const doc = p.toObject ? p.toObject() : { ...p };
     const status = doc.status || PRODUCTION_STATUS.PENDING;
@@ -75,7 +101,7 @@ function attachCanEdit(productions, { isAdmin, userId }) {
         isOwner &&
         (status === PRODUCTION_STATUS.PENDING || status === PRODUCTION_STATUS.REJECTED);
     }
-    return formatProduction(doc);
+    return formatProduction(doc, lookup);
   });
 }
 
@@ -92,7 +118,12 @@ function resetApprovalFields(production) {
   production.adjustedAt = null;
 }
 
-export async function createProductionEntry({ employeeId, createdBy, date, dryMachineKg, nonMachineKg, notes }) {
+async function applyItemsToProduction(production, rawItems) {
+  const { items } = await validateAndNormalizeItems(rawItems, {
+    GramType,
+    QualityType,
+  });
+  const { dryMachineKg, nonMachineKg } = sumKgByMethod(items);
   if (dryMachineKg === 0 && nonMachineKg === 0) {
     throw createError(400, 'Enter at least some production quantity');
   }
@@ -100,22 +131,36 @@ export async function createProductionEntry({ employeeId, createdBy, date, dryMa
   const rates = await getRates();
   const snapshot = buildProductionFromRates(dryMachineKg, nonMachineKg, rates);
 
-  const production = await Production.create({
+  production.items = items;
+  production.dryMachineKg = dryMachineKg;
+  production.nonMachineKg = nonMachineKg;
+  production.dryMachineRate = snapshot.dryMachineRate;
+  production.nonMachineRate = snapshot.nonMachineRate;
+  production.dryMachineAmount = snapshot.dryMachineAmount;
+  production.nonMachineAmount = snapshot.nonMachineAmount;
+  production.totalAmount = snapshot.totalAmount;
+
+  return snapshot;
+}
+
+export async function createProductionEntry({ employeeId, createdBy, date, items, notes }) {
+  const production = new Production({
     employeeId,
     createdBy,
     date: startOfDay(date),
-    dryMachineKg,
-    nonMachineKg,
     notes: notes || '',
     status: PRODUCTION_STATUS.PENDING,
     bonusAmount: 0,
     deductionAmount: 0,
     adjustmentReason: '',
-    netAmount: snapshot.totalAmount,
-    ...snapshot,
   });
 
-  return formatProduction(production);
+  const snapshot = await applyItemsToProduction(production, items);
+  production.netAmount = snapshot.totalAmount;
+  await production.save();
+
+  const lookup = await loadLookupMaps();
+  return formatProduction(production, lookup);
 }
 
 export async function updateProductionEntry(id, user, payload) {
@@ -141,32 +186,10 @@ export async function updateProductionEntry(id, user, payload) {
     }
   }
 
-  const dryMachineKg = payload.dryMachineKg ?? production.dryMachineKg;
-  const nonMachineKg = payload.nonMachineKg ?? production.nonMachineKg;
-
-  if (dryMachineKg === 0 && nonMachineKg === 0) {
-    throw createError(400, 'Enter at least some production quantity');
+  if (payload.items) {
+    await applyItemsToProduction(production, payload.items);
   }
 
-  let rates = {
-    dryMachineRate: production.dryMachineRate,
-    nonMachineRate: production.nonMachineRate,
-  };
-
-  if (!production.dryMachineRate && !production.nonMachineRate) {
-    const current = await getRates();
-    rates = { dryMachineRate: current.dryMachineRate, nonMachineRate: current.nonMachineRate };
-    production.dryMachineRate = rates.dryMachineRate;
-    production.nonMachineRate = rates.nonMachineRate;
-  }
-
-  const amounts = recalculateFromStoredRates(dryMachineKg, nonMachineKg, rates);
-
-  production.dryMachineKg = dryMachineKg;
-  production.nonMachineKg = nonMachineKg;
-  production.dryMachineAmount = amounts.dryMachineAmount;
-  production.nonMachineAmount = amounts.nonMachineAmount;
-  production.totalAmount = amounts.totalAmount;
   if (payload.date !== undefined) production.date = startOfDay(payload.date);
   if (payload.notes !== undefined) production.notes = payload.notes;
 
@@ -180,7 +203,8 @@ export async function updateProductionEntry(id, user, payload) {
 
   await production.save();
   await production.populate('approvedBy', 'name');
-  return formatProduction(production);
+  const lookup = await loadLookupMaps();
+  return formatProduction(production, lookup);
 }
 
 export async function approveProductionEntry(
@@ -225,7 +249,8 @@ export async function approveProductionEntry(
 
   await production.save();
   await production.populate(['approvedBy', 'adjustedBy'], 'name');
-  return formatProduction(production);
+  const lookup = await loadLookupMaps();
+  return formatProduction(production, lookup);
 }
 
 export async function rejectProductionEntry(id, adminUserId, rejectionReason) {
@@ -245,7 +270,8 @@ export async function rejectProductionEntry(id, adminUserId, rejectionReason) {
   production.rejectionReason = rejectionReason.trim();
 
   await production.save();
-  return formatProduction(production);
+  const lookup = await loadLookupMaps();
+  return formatProduction(production, lookup);
 }
 
 export async function deleteProductionEntry(id, user) {
@@ -260,7 +286,7 @@ export async function deleteProductionEntry(id, user) {
   return { message: 'Production entry deleted' };
 }
 
-export async function listProductionEntries(filters, { isAdmin, userId }) {
+function buildListQuery(filters, { isAdmin, userId }) {
   const query = {};
   if (filters.employeeId) query.employeeId = filters.employeeId;
   if (!isAdmin) query.employeeId = new mongoose.Types.ObjectId(userId);
@@ -281,6 +307,25 @@ export async function listProductionEntries(filters, { isAdmin, userId }) {
     }
   }
 
+  const itemFilters = [];
+  if (filters.gramTypeId) itemFilters.push({ gramTypeId: new mongoose.Types.ObjectId(filters.gramTypeId) });
+  if (filters.qualityTypeId) {
+    itemFilters.push({ qualityTypeId: new mongoose.Types.ObjectId(filters.qualityTypeId) });
+  }
+  if (filters.method) itemFilters.push({ method: filters.method });
+
+  if (itemFilters.length === 1) {
+    query.items = { $elemMatch: itemFilters[0] };
+  } else if (itemFilters.length > 1) {
+    query.items = { $elemMatch: { $and: itemFilters } };
+  }
+
+  return query;
+}
+
+export async function listProductionEntries(filters, { isAdmin, userId }) {
+  const query = buildListQuery(filters, { isAdmin, userId });
+
   const productions = await Production.find(query)
     .populate('employeeId', 'name phone')
     .populate('createdBy', 'name')
@@ -288,7 +333,17 @@ export async function listProductionEntries(filters, { isAdmin, userId }) {
     .populate('adjustedBy', 'name')
     .sort({ date: -1, createdAt: -1 });
 
-  return attachCanEdit(productions, { isAdmin, userId });
+  const lookup = await loadLookupMaps();
+  return attachCanEdit(productions, { isAdmin, userId }, lookup);
+}
+
+export async function listProductionReportRows(filters, { userId }) {
+  const productions = await listProductionEntries(
+    { ...filters, approvedOnly: true },
+    { isAdmin: true, userId }
+  );
+  const lookup = await loadLookupMaps();
+  return expandProductionToReportRows(productions, lookup.gramMap, lookup.qualityMap);
 }
 
 export async function getRecentEntries(employeeId, limit = 5) {
@@ -299,7 +354,8 @@ export async function getRecentEntries(employeeId, limit = 5) {
     .sort({ createdAt: -1 })
     .limit(limit);
 
-  return attachCanEdit(productions, { isAdmin: false, userId: employeeId.toString() });
+  const lookup = await loadLookupMaps();
+  return attachCanEdit(productions, { isAdmin: false, userId: employeeId.toString() }, lookup);
 }
 
 export async function countByStatus(match = {}) {

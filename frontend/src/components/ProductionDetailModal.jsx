@@ -1,6 +1,7 @@
 import Modal from './ui/Modal.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import ProductionAmountBreakdown from './ProductionAmountBreakdown.jsx';
+import ProductionItemsTable from './ProductionItemsTable.jsx';
 import { formatDate, formatDateTime, formatKg } from '../utils/format.js';
 
 export default function ProductionDetailModal({ open, onClose, production }) {
@@ -34,6 +35,13 @@ export default function ProductionDetailModal({ open, onClose, production }) {
         <div className="flex justify-between gap-4">
           <dt className="text-stone-500">Total KG</dt>
           <dd className="font-medium">{formatKg(production.totalKg)}</dd>
+        </div>
+
+        <div className="border-t border-stone-100 pt-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-400">
+            Production Rows
+          </p>
+          <ProductionItemsTable items={production.items} />
         </div>
 
         <div className="border-t border-stone-100 pt-3">

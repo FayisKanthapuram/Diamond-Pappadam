@@ -17,6 +17,7 @@ import {
   NetAmountHeader,
   getPaymentAmounts,
 } from '../../components/PaymentAmountDisplay.jsx';
+import ProductionItemsTable from '../../components/ProductionItemsTable.jsx';
 import { formatDate, formatKg } from '../../utils/format.js';
 
 function PaymentTableCells({ production }) {
@@ -123,6 +124,9 @@ export default function MyProduction() {
                       <dd>{formatKg(p.totalKg)}</dd>
                     </div>
                   </dl>
+                  <div className="mt-2">
+                    <ProductionItemsTable items={p.items} compact />
+                  </div>
                   <div className="mt-3 border-t border-stone-100 pt-3">
                     <ProductionAmountBreakdown
                       production={p}

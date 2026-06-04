@@ -8,6 +8,7 @@ import {
   NET_AMOUNT_TOOLTIP,
   getPaymentAmounts,
 } from './PaymentAmountDisplay.jsx';
+import ProductionItemsTable from './ProductionItemsTable.jsx';
 import { formatDate, formatDateTime, formatKg } from '../utils/format.js';
 
 function Section({ title, children }) {
@@ -45,6 +46,14 @@ export default function EmployeeProductionDetailModal({ open, onClose, productio
             <Row label="Dry KG">{production.dryMachineKg}</Row>
             <Row label="Non-Machine KG">{production.nonMachineKg}</Row>
             <Row label="Total KG">{formatKg(production.totalKg)}</Row>
+          </dl>
+          <div className="mt-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+              Production Rows
+            </p>
+            <ProductionItemsTable items={production.items} />
+          </div>
+          <dl>
             {production.notes && (
               <div className="mt-2 rounded-lg bg-stone-50 p-3 text-sm">
                 <p className="text-xs font-medium text-stone-500">Your Notes</p>

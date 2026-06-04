@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { Production } from '../models/Production.js';
 import { User } from '../models/User.js';
 import { getRecentEntries, countByStatus, countPendingApprovals } from './productionService.js';
+import { sumOutstandingLiability, getEmployeeBalance } from './salaryLedgerService.js';
 import {
   startOfDay,
   endOfDay,
@@ -37,12 +38,14 @@ export async function getAdminDashboard() {
   const monthStart = startOfMonth(year, month);
   const monthEnd = endOfMonth(year, month);
 
-  const [today, thisMonth, activeEmployees, pendingApprovalsCount] = await Promise.all([
-    sumProduction({ date: { $gte: todayStart, $lte: todayEnd } }),
-    sumProduction({ date: { $gte: monthStart, $lte: monthEnd } }),
-    User.countDocuments({ role: 'employee', active: true }),
-    countPendingApprovals(),
-  ]);
+  const [today, thisMonth, activeEmployees, pendingApprovalsCount, outstandingSalaryLiability] =
+    await Promise.all([
+      sumProduction({ date: { $gte: todayStart, $lte: todayEnd } }),
+      sumProduction({ date: { $gte: monthStart, $lte: monthEnd } }),
+      User.countDocuments({ role: 'employee', active: true }),
+      countPendingApprovals(),
+      sumOutstandingLiability(),
+    ]);
 
   return {
     pendingApprovalsCount,
@@ -50,6 +53,7 @@ export async function getAdminDashboard() {
     monthProductionKg: thisMonth.totalKg,
     todaySalaryCost: today.totalAmount,
     monthSalaryCost: thisMonth.totalAmount,
+    outstandingSalaryLiability,
     activeEmployees,
   };
 }
@@ -67,17 +71,21 @@ export async function getEmployeeDashboard(employeeId) {
   const baseToday = { employeeId: employeeObjectId, date: { $gte: todayStart, $lte: todayEnd } };
   const baseMonth = { employeeId: employeeObjectId, date: { $gte: monthStart, $lte: monthEnd } };
 
-  const [today, thisMonth, recentProductionEntries, statusCounts] = await Promise.all([
+  const [today, thisMonth, recentProductionEntries, statusCounts, ledger] = await Promise.all([
     sumProduction(baseToday),
     sumProduction(baseMonth),
     getRecentEntries(employeeObjectId, 5),
     countByStatus({ employeeId: employeeObjectId }),
+    getEmployeeBalance(employeeId),
   ]);
 
   return {
     todayProductionKg: today.totalKg,
     monthProductionKg: thisMonth.totalKg,
     estimatedEarnings: thisMonth.totalAmount,
+    totalEarned: ledger.totalEarned,
+    totalPaid: ledger.totalPaid,
+    balance: ledger.balance,
     pendingEntries: statusCounts.pending,
     approvedEntries: statusCounts.approved,
     rejectedEntries: statusCounts.rejected,

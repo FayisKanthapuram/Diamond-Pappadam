@@ -32,6 +32,18 @@ export const settingsApi = {
   update: (data) => api.put('/settings', data, { authRealm: 'admin' }),
 };
 
+export const gramTypesApi = {
+  list: () => api.get('/gram-types', { authRealm: getSettingsRealm() }),
+  create: (name) => api.post('/gram-types', { name }, { authRealm: 'admin' }),
+  update: (id, data) => api.patch(`/gram-types/${id}`, data, { authRealm: 'admin' }),
+};
+
+export const qualityTypesApi = {
+  list: () => api.get('/quality-types', { authRealm: getSettingsRealm() }),
+  create: (name) => api.post('/quality-types', { name }, { authRealm: 'admin' }),
+  update: (id, data) => api.patch(`/quality-types/${id}`, data, { authRealm: 'admin' }),
+};
+
 function getSettingsRealm() {
   if (typeof window !== 'undefined' && window.location.pathname.startsWith('/employee')) {
     return 'employee';
@@ -56,8 +68,11 @@ export const reportsApi = {
   production: (params) => api.get('/reports/production', { params, authRealm: 'admin' }),
 };
 
-export const payrollApi = {
-  generate: (month, year) => api.post('/payroll/generate', { month, year }, { authRealm: 'admin' }),
-  list: (params) => api.get('/payroll', { params, authRealm: 'admin' }),
-  markPaid: (id, data) => api.patch(`/payroll/${id}`, data, { authRealm: 'admin' }),
+export const salaryLedgerApi = {
+  listSummaries: (params) => api.get('/salary-ledger', { params, authRealm: 'admin' }),
+  getEmployee: (employeeId, params) =>
+    api.get(`/salary-ledger/employees/${employeeId}`, { params, authRealm: 'admin' }),
+  addPayment: (employeeId, data) =>
+    api.post(`/salary-ledger/employees/${employeeId}/payments`, data, { authRealm: 'admin' }),
+  mine: (params) => api.get('/salary-ledger/me', { params, authRealm: 'employee' }),
 };
