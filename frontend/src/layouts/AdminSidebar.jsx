@@ -51,6 +51,13 @@ export default function AdminSidebar({ open, onClose }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto p-2">
+          <NavLink
+            to="/"
+            onClick={onClose}
+            className="mb-1 flex min-h-11 items-center rounded-lg px-4 text-base font-medium transition active:scale-[0.98] sm:text-sm text-stone-600 active:bg-stone-100"
+          >
+            🏠 Home
+          </NavLink>
           {adminLinks.map((link) => (
             <NavLink
               key={link.to}
