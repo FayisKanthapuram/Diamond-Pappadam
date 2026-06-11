@@ -30,33 +30,33 @@ export default function AdminSidebar({ open, onClose }) {
         aria-hidden={!open}
       />
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[min(100vw-3rem,18rem)] max-w-full flex-col border-r border-stone-200 bg-white shadow-xl transition-transform duration-200 ease-out lg:static lg:z-auto lg:w-64 lg:translate-x-0 lg:shadow-none ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(100vw-3rem,18rem)] max-w-full flex-col border-r border-slate-800 bg-slate-900 shadow-2xl transition-transform duration-200 ease-out lg:static lg:z-auto lg:w-64 lg:translate-x-0 lg:shadow-none ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Admin navigation"
       >
-        <div className="flex items-center justify-between border-b border-stone-200 px-4 py-4">
+        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-5">
           <div className="min-w-0">
-            <h1 className="truncate text-base font-bold text-brand-700 sm:text-lg">Diamond Pappadam</h1>
-            <p className="text-xs text-stone-500">Admin Portal</p>
+            <h1 className="truncate text-base font-extrabold tracking-tight text-white sm:text-lg">Diamond Pappadam</h1>
+            <p className="text-xs font-semibold text-brand-400">Admin Portal</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="touch-target flex shrink-0 items-center justify-center rounded-lg text-stone-500 lg:hidden"
+            className="touch-target flex shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-white active:bg-slate-800 lg:hidden"
             aria-label="Close menu"
           >
             ✕
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-2">
+        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           <NavLink
             to="/"
             onClick={onClose}
-            className="mb-1 flex min-h-11 items-center rounded-lg px-4 text-base font-medium transition active:scale-[0.98] sm:text-sm text-stone-600 active:bg-stone-100"
+            className="flex min-h-11 items-center rounded-xl px-4 text-base font-semibold transition-all duration-200 active:scale-[0.98] sm:text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
           >
-            🏠 Home
+            Home
           </NavLink>
           {adminLinks.map((link) => (
             <NavLink
@@ -64,10 +64,10 @@ export default function AdminSidebar({ open, onClose }) {
               to={link.to}
               onClick={onClose}
               className={({ isActive }) =>
-                `mb-1 flex min-h-11 items-center rounded-lg px-4 text-base font-medium transition active:scale-[0.98] sm:text-sm ${
+                `flex min-h-11 items-center rounded-xl px-4 text-base font-semibold transition-all duration-200 active:scale-[0.98] sm:text-sm ${
                   isActive
-                    ? 'bg-brand-50 text-brand-800'
-                    : 'text-stone-600 active:bg-stone-100'
+                    ? 'bg-brand-600 text-white shadow-md shadow-brand-500/10'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                 }`
               }
             >
@@ -76,10 +76,14 @@ export default function AdminSidebar({ open, onClose }) {
           ))}
         </nav>
 
-        <div className="border-t border-stone-200 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <p className="truncate text-sm font-medium">{user?.name}</p>
-          <p className="text-xs text-stone-500">Administrator</p>
-          <Button variant="ghost" className="mt-3 w-full min-h-11" onClick={handleLogout}>
+        <div className="border-t border-slate-800 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-slate-950/20">
+          <p className="truncate text-sm font-bold text-slate-200">{user?.name}</p>
+          <p className="text-xs font-medium text-slate-400">Administrator</p>
+          <Button 
+            variant="ghost" 
+            className="mt-4 w-full min-h-11 text-slate-400 hover:text-rose-400 hover:bg-rose-950/20 active:bg-rose-950/30 font-bold border border-slate-800" 
+            onClick={handleLogout}
+          >
             Logout
           </Button>
         </div>

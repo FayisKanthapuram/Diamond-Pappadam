@@ -47,11 +47,11 @@ export default function EmployeeLogin() {
   }
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-gradient-to-br from-brand-50 to-stone-100 p-3 sm:p-4">
-      <Card className="w-full max-w-md">
-        <div className="mb-6 text-center">
-          <h1 className="text-xl font-bold text-brand-800 sm:text-2xl">Diamond Pappadam</h1>
-          <p className="mt-1 text-sm text-stone-500">Employee Portal</p>
+    <div className="flex min-h-[100dvh] items-center justify-center bg-gradient-to-br from-brand-50/20 via-slate-50 to-indigo-50/30 p-4 sm:p-6">
+      <Card className="w-full max-w-md shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Diamond Pappadam</h1>
+          <p className="mt-2 text-sm font-semibold text-brand-600 uppercase tracking-wider">Employee Portal</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input

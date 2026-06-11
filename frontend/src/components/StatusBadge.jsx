@@ -1,7 +1,7 @@
 const STATUS_CONFIG = {
-  pending: { label: 'Pending', emoji: '🟡', className: 'bg-amber-50 text-amber-800' },
-  approved: { label: 'Approved', emoji: '🟢', className: 'bg-emerald-50 text-emerald-800' },
-  rejected: { label: 'Rejected', emoji: '🔴', className: 'bg-red-50 text-red-800' },
+  pending: { label: 'Pending', emoji: '🟡', className: 'bg-amber-50/60 text-amber-800 border border-amber-200/40' },
+  approved: { label: 'Approved', emoji: '🟢', className: 'bg-emerald-50/60 text-emerald-800 border border-emerald-200/40' },
+  rejected: { label: 'Rejected', emoji: '🔴', className: 'bg-rose-50/60 text-rose-800 border border-rose-200/40' },
 };
 
 export default function StatusBadge({ status }) {

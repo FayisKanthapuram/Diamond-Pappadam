@@ -1,8 +1,8 @@
 const styles = {
-  active: 'bg-green-100 text-green-800',
-  inactive: 'bg-stone-100 text-stone-600',
-  pending: 'bg-amber-100 text-amber-800',
-  paid: 'bg-green-100 text-green-800',
+  active: 'bg-emerald-50/60 text-emerald-800 border border-emerald-200/40',
+  inactive: 'bg-slate-100/60 text-slate-600 border border-slate-200/40',
+  pending: 'bg-amber-50/60 text-amber-800 border border-amber-200/40',
+  paid: 'bg-emerald-50/60 text-emerald-800 border border-emerald-200/40',
 };
 
 export default function Badge({ status, children }) {

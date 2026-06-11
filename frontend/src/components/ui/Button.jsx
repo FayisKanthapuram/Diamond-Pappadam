@@ -1,8 +1,8 @@
 const variants = {
-  primary: 'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800',
-  secondary: 'bg-stone-200 text-stone-800 hover:bg-stone-300 active:bg-stone-400',
-  danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800',
-  ghost: 'bg-transparent text-stone-700 hover:bg-stone-100 active:bg-stone-200',
+  primary: 'bg-brand-600 text-white hover:bg-brand-700 active:scale-[0.98] shadow-sm shadow-brand-500/10',
+  secondary: 'bg-slate-100 text-slate-800 hover:bg-slate-200 active:scale-[0.98]',
+  danger: 'bg-rose-600 text-white hover:bg-rose-700 active:scale-[0.98] shadow-sm shadow-rose-500/10',
+  ghost: 'bg-transparent text-slate-700 hover:bg-slate-100 active:bg-slate-200',
 };
 
 const sizes = {
@@ -24,7 +24,7 @@ export default function Button({
     <button
       type={type}
       disabled={disabled}
-      className={`inline-flex w-full items-center justify-center rounded-lg font-medium transition disabled:opacity-50 sm:w-auto ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex w-full items-center justify-center rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 sm:w-auto ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
       {children}
