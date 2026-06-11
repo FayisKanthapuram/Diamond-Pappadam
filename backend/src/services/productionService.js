@@ -283,7 +283,34 @@ export async function deleteProductionEntry(id, user) {
   }
 
   await production.deleteOne();
-  return { message: 'Production entry deleted' };
+  return production;
+}
+
+export async function revertProductionEntry(id, adminUserId) {
+  const production = await Production.findById(id)
+    .populate('employeeId', 'name phone')
+    .populate('createdBy', 'name');
+  if (!production) throw createError(404, 'Production entry not found');
+
+  const currentStatus = production.status || PRODUCTION_STATUS.PENDING;
+  if (currentStatus === PRODUCTION_STATUS.PENDING) {
+    throw createError(400, 'Production is already pending');
+  }
+
+  production.status = PRODUCTION_STATUS.PENDING;
+  production.approvedBy = null;
+  production.approvedAt = null;
+  production.bonusAmount = 0;
+  production.deductionAmount = 0;
+  production.adjustmentReason = '';
+  production.netAmount = 0;
+  production.adjustedBy = null;
+  production.adjustedAt = null;
+  production.rejectionReason = '';
+
+  await production.save();
+  const lookup = await loadLookupMaps();
+  return formatProduction(production, lookup);
 }
 
 function buildListQuery(filters, { isAdmin, userId }) {

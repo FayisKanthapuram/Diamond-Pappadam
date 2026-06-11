@@ -14,6 +14,7 @@ import qualityTypeRoutes from './routes/qualityTypeRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import salaryLedgerRoutes from './routes/salaryLedgerRoutes.js';
+import activityLogRoutes from './routes/activityLogRoutes.js';
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/quality-types', qualityTypeRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/salary-ledger', salaryLedgerRoutes);
+app.use('/api/activity-logs', activityLogRoutes);
 
 app.use(errorHandler);
 

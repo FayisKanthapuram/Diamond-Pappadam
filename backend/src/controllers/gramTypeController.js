@@ -1,5 +1,6 @@
 import { validationResult } from 'express-validator';
 import { listGramTypes, createGramType, updateGramType } from '../services/gramTypeService.js';
+import { logAction } from '../services/activityLogService.js';
 
 export async function getGramTypes(req, res, next) {
   try {
@@ -18,6 +19,15 @@ export async function postGramType(req, res, next) {
       return res.status(400).json({ message: errors.array()[0].msg });
     }
     const gramType = await createGramType({ name: req.body.name });
+
+    // Log gram type added
+    await logAction(req.user, {
+      action: 'Gram type added',
+      description: `Added new gram type: ${gramType.name}`,
+      targetType: 'GramType',
+      targetId: gramType.id,
+    });
+
     res.status(201).json({ gramType });
   } catch (err) {
     next(err);

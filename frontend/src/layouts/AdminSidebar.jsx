@@ -8,6 +8,7 @@ const adminLinks = [
   { to: '/admin/approvals', label: 'Production Approvals' },
   { to: '/admin/reports', label: 'Production Reports' },
   { to: '/admin/salary-ledger', label: 'Salary Ledger' },
+  { to: '/admin/activity-logs', label: 'Activity Logs' },
   { to: '/admin/settings', label: 'Settings' },
 ];
 

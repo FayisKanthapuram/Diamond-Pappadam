@@ -4,6 +4,7 @@ import {
   createQualityType,
   updateQualityType,
 } from '../services/qualityTypeService.js';
+import { logAction } from '../services/activityLogService.js';
 
 export async function getQualityTypes(req, res, next) {
   try {
@@ -22,6 +23,15 @@ export async function postQualityType(req, res, next) {
       return res.status(400).json({ message: errors.array()[0].msg });
     }
     const qualityType = await createQualityType({ name: req.body.name });
+
+    // Log quality type added
+    await logAction(req.user, {
+      action: 'Quality type added',
+      description: `Added new quality type: ${qualityType.name}`,
+      targetType: 'QualityType',
+      targetId: qualityType.id,
+    });
+
     res.status(201).json({ qualityType });
   } catch (err) {
     next(err);

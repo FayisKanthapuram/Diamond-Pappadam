@@ -61,6 +61,7 @@ export const productionsApi = {
   approve: (id, data) => api.patch(`/productions/${id}/approve`, data, { authRealm: 'admin' }),
   reject: (id, rejectionReason) =>
     api.patch(`/productions/${id}/reject`, { rejectionReason }, { authRealm: 'admin' }),
+  revert: (id) => api.patch(`/productions/${id}/revert`, {}, { authRealm: 'admin' }),
   myEarnings: (params) => api.get('/productions/me/earnings', { params, authRealm: 'employee' }),
 };
 
@@ -75,4 +76,8 @@ export const salaryLedgerApi = {
   addPayment: (employeeId, data) =>
     api.post(`/salary-ledger/employees/${employeeId}/payments`, data, { authRealm: 'admin' }),
   mine: (params) => api.get('/salary-ledger/me', { params, authRealm: 'employee' }),
+};
+
+export const activityLogsApi = {
+  list: (params) => api.get('/activity-logs', { params, authRealm: 'admin' }),
 };

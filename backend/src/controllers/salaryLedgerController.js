@@ -4,6 +4,8 @@ import {
   getEmployeeLedger,
   createSalaryPayment,
 } from '../services/salaryLedgerService.js';
+import { logAction } from '../services/activityLogService.js';
+import { User } from '../models/User.js';
 
 export async function listSummaries(req, res, next) {
   try {
@@ -52,6 +54,17 @@ export async function addPayment(req, res, next) {
       date,
       note,
       createdBy: req.user.id,
+    });
+
+    // Lookup employee name for the log description
+    const employee = await User.findById(req.params.employeeId).select('name').lean();
+
+    // Log salary payment recorded
+    await logAction(req.user, {
+      action: 'Salary payment recorded',
+      description: `Recorded payment of ${amount} INR for employee ${employee?.name || req.params.employeeId}`,
+      targetType: 'SalaryPayment',
+      targetId: result.payment.id,
     });
 
     res.status(201).json(result);

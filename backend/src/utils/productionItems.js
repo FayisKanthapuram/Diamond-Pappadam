@@ -141,12 +141,18 @@ export function expandProductionToReportRows(productions, gramMap, qualityMap) {
       employeeName: p.employeeName,
       status: p.status,
       originalAmount: p.originalAmount,
-      bonusAmount: p.bonusAmount,
-      deductionAmount: p.deductionAmount,
-      netAmount: p.netAmount,
+      dryMachineRate: p.dryMachineRate,
+      nonMachineRate: p.nonMachineRate,
     };
     const items = p.items?.length ? p.items : legacyItemsFromProduction(p);
+    let isFirst = true;
     for (const item of items) {
+      const rate = item.method === PRODUCTION_METHOD.DRY ? p.dryMachineRate : p.nonMachineRate;
+      const amount = item.kg * (rate || 0);
+      const itemBonus = isFirst ? (p.bonusAmount || 0) : 0;
+      const itemDeduction = isFirst ? (p.deductionAmount || 0) : 0;
+      const itemNetAmount = amount + itemBonus - itemDeduction;
+
       rows.push({
         ...base,
         itemId: item.id,
@@ -156,7 +162,13 @@ export function expandProductionToReportRows(productions, gramMap, qualityMap) {
         specialType: item.specialType || '—',
         method: item.methodLabel || methodLabel(item.method),
         kg: item.kg,
+        rate: rate || 0,
+        amount: amount || 0,
+        bonusAmount: itemBonus,
+        deductionAmount: itemDeduction,
+        netAmount: itemNetAmount,
       });
+      isFirst = false;
     }
   }
   return rows;

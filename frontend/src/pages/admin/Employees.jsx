@@ -19,6 +19,11 @@ export default function Employees() {
   const [resetPassword, setResetPassword] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Search, filter, and sorting state
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('name-asc');
+
   function load() {
     employeesApi
       .list()
@@ -30,6 +35,38 @@ export default function Employees() {
   useEffect(() => {
     load();
   }, []);
+
+  // Compute filtered and sorted list
+  const filteredEmployees = employees
+    .filter((emp) => {
+      const term = search.toLowerCase().trim();
+      const matchSearch =
+        !term ||
+        emp.name.toLowerCase().includes(term) ||
+        emp.phone.includes(term);
+
+      const matchStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' && emp.active) ||
+        (statusFilter === 'disabled' && !emp.active);
+
+      return matchSearch && matchStatus;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'name-asc') {
+        return a.name.localeCompare(b.name);
+      }
+      if (sortBy === 'name-desc') {
+        return b.name.localeCompare(a.name);
+      }
+      if (sortBy === 'created-desc') {
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      }
+      if (sortBy === 'created-asc') {
+        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      }
+      return 0;
+    });
 
   function openAdd() {
     setEditing(null);
@@ -85,15 +122,58 @@ export default function Employees() {
         action={<Button onClick={openAdd}>Add Employee</Button>}
       />
 
+      {/* Search & Filter Bar */}
+      <Card className="mb-6 p-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Search Employees</label>
+            <input
+              type="text"
+              placeholder="Search by name or phone..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-brand-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Status Filter</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-800 focus:border-brand-500 focus:outline-none"
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="disabled">Disabled Only</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Sort By</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-800 focus:border-brand-500 focus:outline-none"
+            >
+              <option value="name-asc">Alphabetical (A - Z)</option>
+              <option value="name-desc">Alphabetical (Z - A)</option>
+              <option value="created-desc">Date Created (Newest First)</option>
+              <option value="created-asc">Date Created (Oldest First)</option>
+            </select>
+          </div>
+        </div>
+      </Card>
+
       <Card>
         {loading ? (
-          <p className="text-stone-500">Loading...</p>
+          <p className="text-slate-500">Loading...</p>
         ) : employees.length === 0 ? (
-          <p className="py-8 text-center text-stone-500">No employees yet.</p>
+          <p className="py-8 text-center text-slate-500">No employees yet.</p>
+        ) : filteredEmployees.length === 0 ? (
+          <p className="py-8 text-center text-slate-500">No employees match your search criteria.</p>
         ) : (
           <>
             <div className="data-card-list">
-              {employees.map((emp) => (
+              {filteredEmployees.map((emp) => (
                 <div key={emp.id} className="data-card">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -127,7 +207,7 @@ export default function Employees() {
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.map((emp) => (
+                  {filteredEmployees.map((emp) => (
                     <tr key={emp.id} className="border-b border-stone-100">
                       <td className="py-3 pr-4">{emp.name}</td>
                       <td className="py-3 pr-4">{emp.phone}</td>

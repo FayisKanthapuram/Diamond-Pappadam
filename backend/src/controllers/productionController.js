@@ -3,6 +3,7 @@ import {
   createProductionEntry,
   updateProductionEntry,
   deleteProductionEntry,
+  revertProductionEntry,
   listProductionEntries,
   listProductionReportRows,
   approveProductionEntry,
@@ -11,6 +12,7 @@ import {
 import { startOfMonth, endOfMonth } from '../utils/dates.js';
 import { Production } from '../models/Production.js';
 import { PRODUCTION_STATUS } from '../config/constants.js';
+import { logAction } from '../services/activityLogService.js';
 import mongoose from 'mongoose';
 
 export async function createProduction(req, res, next) {
@@ -27,6 +29,14 @@ export async function createProduction(req, res, next) {
       date,
       items,
       notes,
+    });
+
+    // Log production submission
+    await logAction(req.user, {
+      action: 'Production submitted',
+      description: `Submitted production entry of ${production.totalKg} kg for date ${new Date(production.date).toLocaleDateString()}`,
+      targetType: 'Production',
+      targetId: production.id,
     });
 
     res.status(201).json({ production });
@@ -49,6 +59,14 @@ export async function updateProduction(req, res, next) {
       notes,
     });
 
+    // Log production edit
+    await logAction(req.user, {
+      action: 'Production edited',
+      description: `Edited production entry of ${production.employeeName || 'employee'} (new weight: ${production.totalKg} kg)`,
+      targetType: 'Production',
+      targetId: production.id,
+    });
+
     res.json({ production });
   } catch (err) {
     next(err);
@@ -68,6 +86,35 @@ export async function approveProduction(req, res, next) {
       deductionAmount,
       adjustmentReason,
     });
+
+    // Log approval
+    await logAction(req.user, {
+      action: 'Production approved',
+      description: `Approved production entry of ${production.employeeName || 'employee'} for date ${new Date(production.date).toLocaleDateString()}`,
+      targetType: 'Production',
+      targetId: production.id,
+    });
+
+    // Log bonus if added
+    if (bonusAmount > 0) {
+      await logAction(req.user, {
+        action: 'Bonus added',
+        description: `Added bonus of ${bonusAmount} INR to production of ${production.employeeName || 'employee'}. Reason: ${adjustmentReason}`,
+        targetType: 'Production',
+        targetId: production.id,
+      });
+    }
+
+    // Log deduction if added
+    if (deductionAmount > 0) {
+      await logAction(req.user, {
+        action: 'Deduction added',
+        description: `Added deduction of ${deductionAmount} INR to production of ${production.employeeName || 'employee'}. Reason: ${adjustmentReason}`,
+        targetType: 'Production',
+        targetId: production.id,
+      });
+    }
+
     res.json({ production });
   } catch (err) {
     next(err);
@@ -86,6 +133,15 @@ export async function rejectProduction(req, res, next) {
       req.user.id,
       req.body.rejectionReason
     );
+
+    // Log rejection
+    await logAction(req.user, {
+      action: 'Production rejected',
+      description: `Rejected production entry of ${production.employeeName || 'employee'}. Reason: ${req.body.rejectionReason}`,
+      targetType: 'Production',
+      targetId: production.id,
+    });
+
     res.json({ production });
   } catch (err) {
     next(err);
@@ -94,8 +150,35 @@ export async function rejectProduction(req, res, next) {
 
 export async function deleteProduction(req, res, next) {
   try {
-    const result = await deleteProductionEntry(req.params.id, req.user);
-    res.json(result);
+    const production = await deleteProductionEntry(req.params.id, req.user);
+
+    // Log deletion
+    await logAction(req.user, {
+      action: 'Production deleted',
+      description: `Deleted production entry of ${production.employeeName || 'employee'} for date ${new Date(production.date).toLocaleDateString()}.`,
+      targetType: 'Production',
+      targetId: production.id,
+    });
+
+    res.json({ message: 'Production entry deleted' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function revertProduction(req, res, next) {
+  try {
+    const production = await revertProductionEntry(req.params.id, req.user.id);
+
+    // Log reversion
+    await logAction(req.user, {
+      action: 'Production reverted to pending',
+      description: `Reverted production entry of ${production.employeeName || 'employee'} for date ${new Date(production.date).toLocaleDateString()} back to pending.`,
+      targetType: 'Production',
+      targetId: production.id,
+    });
+
+    res.json({ production });
   } catch (err) {
     next(err);
   }

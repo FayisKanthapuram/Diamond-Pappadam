@@ -9,6 +9,7 @@ export function sanitizeEmployee(user) {
     phone: user.phone,
     role: user.role,
     active: user.active,
+    createdAt: user.createdAt,
   };
 }
 

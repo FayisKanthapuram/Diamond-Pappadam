@@ -11,7 +11,7 @@ export default function AdminLayout() {
       <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex min-h-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center border-b border-slate-100 bg-white/80 px-4 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center border-b border-slate-100 bg-white/80 px-4 backdrop-blur lg:hidden print:hidden">
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}

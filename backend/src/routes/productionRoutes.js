@@ -4,6 +4,7 @@ import {
   createProduction,
   updateProduction,
   deleteProduction,
+  revertProduction,
   getMyProductions,
   listProductions,
   listPendingProductions,
@@ -33,6 +34,7 @@ router.patch(
   productionRejectValidation,
   rejectProduction
 );
+router.patch('/:id/revert', requireAuth, requireAdmin, param('id').isMongoId(), revertProduction);
 router.patch('/:id', requireAuth, requireActiveUser, productionUpdateValidation, updateProduction);
 router.delete('/:id', requireAuth, requireAdmin, param('id').isMongoId(), deleteProduction);
 router.get('/', requireAuth, requireAdmin, listProductions);

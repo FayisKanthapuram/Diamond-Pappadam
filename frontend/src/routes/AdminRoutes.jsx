@@ -10,6 +10,7 @@ import SalaryLedger from '../pages/admin/SalaryLedger.jsx';
 import SalaryLedgerDetail from '../pages/admin/SalaryLedgerDetail.jsx';
 import ProductionApprovals from '../pages/admin/ProductionApprovals.jsx';
 import Settings from '../pages/admin/Settings.jsx';
+import ActivityLogs from '../pages/admin/ActivityLogs.jsx';
 
 export default function AdminRoutes() {
   return (
@@ -40,6 +41,7 @@ export default function AdminRoutes() {
         <Route path="/admin/payroll" element={<Navigate to="/admin/salary-ledger" replace />} />
         <Route path="/admin/payroll/*" element={<Navigate to="/admin/salary-ledger" replace />} />
         <Route path="/admin/settings" element={<Settings />} />
+        <Route path="/admin/activity-logs" element={<ActivityLogs />} />
       </Route>
     </>
   );
