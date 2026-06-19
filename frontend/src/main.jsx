@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import App from './App.jsx';
 import { AdminAuthProvider } from './context/AdminAuthContext.jsx';
 import { EmployeeAuthProvider } from './context/EmployeeAuthContext.jsx';
+import { SalesAuthProvider } from './context/SalesAuthContext.jsx';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 
@@ -26,8 +27,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AdminAuthProvider>
         <EmployeeAuthProvider>
-          <App />
-          <Toaster position="top-right" />
+          <SalesAuthProvider>
+            <App />
+            <Toaster position="top-right" />
+          </SalesAuthProvider>
         </EmployeeAuthProvider>
       </AdminAuthProvider>
     </BrowserRouter>

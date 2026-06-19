@@ -59,6 +59,10 @@ export function employeeLogin(req, res, next) {
   return loginWithRole(req, res, next, 'employee');
 }
 
+export function salesLogin(req, res, next) {
+  return loginWithRole(req, res, next, 'sales');
+}
+
 export async function changePassword(req, res, next) {
   try {
     const errors = validationResult(req);

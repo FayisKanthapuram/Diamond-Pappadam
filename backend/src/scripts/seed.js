@@ -70,6 +70,24 @@ async function seed() {
   }
   console.log('Quality types:', qualityNames.join(', '));
 
+  let salesUser = await User.findOne({ phone: '8888888888' });
+  if (salesUser) {
+    salesUser.password = 'sales123';
+    salesUser.role = 'sales';
+    salesUser.active = true;
+    await salesUser.save();
+    console.log('Sales account updated (password: sales123)');
+  } else {
+    salesUser = await User.create({
+      name: 'Sales Manager',
+      phone: '8888888888',
+      password: 'sales123',
+      role: 'sales',
+      active: true,
+    });
+    console.log('Sales account created');
+  }
+
   console.log('\nSeed complete.');
   console.log(`Admin login phone: ${adminPhone}`);
   console.log('Use ADMIN_PASSWORD from .env for first login, then change password.');

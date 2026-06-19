@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing.jsx';
 import AdminRoutes from './routes/AdminRoutes.jsx';
 import EmployeeRoutes from './routes/EmployeeRoutes.jsx';
+import SalesRoutes from './routes/SalesRoutes.jsx';
 import InstallPrompt from './components/InstallPrompt.jsx';
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
         <Route path="/login" element={<Navigate to="/admin/login" replace />} />
         {AdminRoutes()}
         {EmployeeRoutes()}
+        {SalesRoutes()}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <InstallPrompt />

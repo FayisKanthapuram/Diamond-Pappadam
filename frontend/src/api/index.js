@@ -81,3 +81,21 @@ export const salaryLedgerApi = {
 export const activityLogsApi = {
   list: (params) => api.get('/activity-logs', { params, authRealm: 'admin' }),
 };
+
+export const salesApi = {
+  getDashboard: () => api.get('/sales-portal/dashboard', { authRealm: 'sales' }),
+  createCustomer: (data) => api.post('/sales-portal/customers', data, { authRealm: 'sales' }),
+  updateCustomer: (id, data) => api.put(`/sales-portal/customers/${id}`, data, { authRealm: 'sales' }),
+  listCustomers: (params) => api.get('/sales-portal/customers', { params, authRealm: 'sales' }),
+  getCustomerDetail: (id) => api.get(`/sales-portal/customers/${id}`, { authRealm: 'sales' }),
+  getCustomerLedger: (id) => api.get(`/sales-portal/customers/${id}/ledger`, { authRealm: 'sales' }),
+  getCustomerStatement: (id, params) => api.get(`/sales-portal/customers/${id}/statement`, { params, authRealm: 'sales' }),
+  createSale: (data) => api.post('/sales-portal/sales', data, { authRealm: 'sales' }),
+  updateSale: (id, data) => api.put(`/sales-portal/sales/${id}`, data, { authRealm: 'sales' }),
+  deleteSale: (id) => api.delete(`/sales-portal/sales/${id}`, { authRealm: 'sales' }),
+  markInvoiceSent: (id) => api.patch(`/sales-portal/sales/${id}/sent`, {}, { authRealm: 'sales' }),
+  listSales: () => api.get('/sales-portal/sales', { authRealm: 'sales' }),
+  createPayment: (data) => api.post('/sales-portal/payments', data, { authRealm: 'sales' }),
+  updatePayment: (id, data) => api.put(`/sales-portal/payments/${id}`, data, { authRealm: 'sales' }),
+  deletePayment: (id) => api.delete(`/sales-portal/payments/${id}`, { authRealm: 'sales' }),
+};

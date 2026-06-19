@@ -39,6 +39,13 @@ export function requireEmployee(req, _res, next) {
   next();
 }
 
+export function requireSales(req, _res, next) {
+  if (req.user?.role !== 'sales') {
+    return next(createError(403, 'Sales access required'));
+  }
+  next();
+}
+
 export async function requireActiveUser(req, _res, next) {
   try {
     const user = await User.findById(req.user.id);

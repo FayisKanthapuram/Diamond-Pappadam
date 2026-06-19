@@ -23,7 +23,7 @@ export default function Landing() {
       {/* Radial ambient glow */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none h-[500px] w-[500px] rounded-full bg-brand-500/10 blur-[120px]" />
       
-      <div className="relative z-10 flex w-full max-w-3xl flex-col items-center">
+      <div className="relative z-10 flex w-full max-w-5xl flex-col items-center">
         <div
           className="mb-8 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-tr from-brand-500 to-indigo-500 p-[1px] shadow-[0_0_50px_rgba(31,94,255,0.2)]"
           aria-hidden
@@ -40,7 +40,7 @@ export default function Landing() {
           Production Management & Ledger System
         </p>
 
-        <div className="mt-12 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+        <div className="mt-12 grid w-full grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
           <RoleCard
             icon="👨‍💼"
             title="Admin Portal"
@@ -52,6 +52,12 @@ export default function Landing() {
             title="Employee Portal"
             description="Log daily production quantities, view historical entries, and track total earnings."
             to="/employee/login"
+          />
+          <RoleCard
+            icon="💼"
+            title="Sales Portal"
+            description="Track customers, record sales invoices, log received payments, and view outstanding balances."
+            to="/sales/login"
           />
         </div>
       </div>

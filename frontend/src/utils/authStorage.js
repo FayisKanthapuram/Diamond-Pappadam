@@ -1,7 +1,7 @@
-const PREFIX = { admin: 'admin', employee: 'employee' };
+const PREFIX = { admin: 'admin', employee: 'employee', sales: 'sales' };
 
 export function getAuthKeys(realm) {
-  const p = PREFIX[realm];
+  const p = PREFIX[realm] || realm;
   return {
     token: `${p}_token`,
     user: `${p}_user`,
@@ -42,9 +42,13 @@ export function clearSession(realm) {
 export function getRealmFromPath(pathname = window.location.pathname) {
   if (pathname.startsWith('/admin')) return 'admin';
   if (pathname.startsWith('/employee')) return 'employee';
+  if (pathname.startsWith('/sales')) return 'sales';
   return null;
 }
 
 export function getLoginPath(realm) {
-  return realm === 'admin' ? '/admin/login' : '/employee/login';
+  if (realm === 'admin') return '/admin/login';
+  if (realm === 'employee') return '/employee/login';
+  if (realm === 'sales') return '/sales/login';
+  return '/';
 }
